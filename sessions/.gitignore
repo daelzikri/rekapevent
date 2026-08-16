@@ -1,0 +1,4 @@
+# Ignore session files
+*
+!.gitignore
+!.htaccess

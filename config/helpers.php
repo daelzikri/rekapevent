@@ -13,7 +13,19 @@ function e(?string $value): string {
  */
 function init_session(): void {
     if (session_status() === PHP_SESSION_NONE) {
-        // Konfigurasi cookie sesi universal (stabil untuk HTTP, HTTPS, & Proxy Hostinger)
+        // 1. Nama cookie unik khusus aplikasi ini untuk cegah tabrakan cookie PHPSESSID dari domain induk/subdomain lain
+        session_name('REKAPEVENT_SESSID');
+
+        // 2. Gunakan folder direktori simpan sesi khusus di dalam proyek agar tidak terhapus oleh garbage collector Hostinger
+        $sessionDir = __DIR__ . '/../sessions';
+        if (!is_dir($sessionDir)) {
+            @mkdir($sessionDir, 0700, true);
+        }
+        if (is_dir($sessionDir) && is_writable($sessionDir)) {
+            @session_save_path($sessionDir);
+        }
+
+        // 3. Konfigurasi parameter cookie universal
         @ini_set('session.cookie_httponly', '1');
         @ini_set('session.cookie_path', '/');
         @ini_set('session.cookie_samesite', 'Lax');
@@ -22,7 +34,7 @@ function init_session(): void {
             'lifetime' => 0,
             'path'     => '/',
             'domain'   => '',
-            'secure'   => false, // Gunakan false agar cookie PHPSESSID tidak dibuang browser jika koneksi proxy/HTTP
+            'secure'   => false,
             'httponly' => true,
             'samesite' => 'Lax'
         ]);
@@ -30,6 +42,7 @@ function init_session(): void {
         @session_start();
     }
 }
+
 
 
 

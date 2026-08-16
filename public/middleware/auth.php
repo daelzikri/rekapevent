@@ -11,6 +11,10 @@ init_session();
  * Autentikasi Pengguna Standar Sesi PHP
  */
 function authenticate_user(): array {
+    if (!empty($GLOBALS['currentUser'])) {
+        return $GLOBALS['currentUser'];
+    }
+
     if (empty($_SESSION['user_id'])) {
         redirect("/auth/login.php");
     }
@@ -27,6 +31,7 @@ function authenticate_user(): array {
     $GLOBALS['currentUser'] = $user;
     return $user;
 }
+
 
 
 /**
