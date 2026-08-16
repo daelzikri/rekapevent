@@ -1,0 +1,9 @@
+# Root .htaccess for Subdomain & Shared Hosting Deployment
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Prevent loop if public directory does not exist or if already inside public
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{DOCUMENT_ROOT}/public -d
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
