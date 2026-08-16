@@ -136,7 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="/auth/login.php" class="space-y-5">
+        <form method="POST" action="" class="space-y-5">
+
             <?= get_csrf_input() ?>
             <div>
                 <label for="username" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Username</label>

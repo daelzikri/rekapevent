@@ -170,7 +170,8 @@ $successMsg = $_GET['success'] ?? null;
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8">
             <h3 class="text-lg font-bold text-white mb-6">Ubah Data Barang</h3>
 
-            <form method="POST" action="/pekerja/edit_barang.php?id=<?= $barangId ?>" enctype="multipart/form-data" class="space-y-6">
+            <form method="POST" action="" enctype="multipart/form-data" class="space-y-6">
+
                 <?= get_csrf_input() ?>
 
                 <!-- Input 1: Nama Barang -->

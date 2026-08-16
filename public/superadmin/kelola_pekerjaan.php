@@ -151,7 +151,7 @@ $jobsList = $stmtJobs->fetchAll();
         <!-- Form Tambah Pekerjaan Baru -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-6">
             <h3 class="text-lg font-bold text-white mb-4">Buat Pekerjaan Event Baru & Assign Akun Pekerja</h3>
-            <form method="POST" action="/superadmin/kelola_pekerjaan.php" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <form method="POST" action="" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <?= get_csrf_input() ?>
                 <input type="hidden" name="action" value="create_job">
 
@@ -224,7 +224,7 @@ $jobsList = $stmtJobs->fetchAll();
                                         Edit
                                     </button>
 
-                                    <form method="POST" action="/superadmin/kelola_pekerjaan.php" class="inline" onsubmit="return confirm('Hapus pekerjaan <?= e(addslashes($job['nama_pekerjaan'])) ?> beserta seluruh barangnya?');">
+                                    <form method="POST" action="" class="inline" onsubmit="return confirm('Hapus pekerjaan <?= e(addslashes($job['nama_pekerjaan'])) ?> beserta seluruh barangnya?');">
                                         <?= get_csrf_input() ?>
                                         <input type="hidden" name="action" value="delete_job">
                                         <input type="hidden" name="job_id" value="<?= $job['id'] ?>">
@@ -241,7 +241,7 @@ $jobsList = $stmtJobs->fetchAll();
     </main>
 
     <!-- Hidden Edit Job Modal Form -->
-    <form id="editJobForm" method="POST" action="/superadmin/kelola_pekerjaan.php" class="hidden">
+    <form id="editJobForm" method="POST" action="" class="hidden">
         <?= get_csrf_input() ?>
         <input type="hidden" name="action" value="edit_job">
         <input type="hidden" id="editJobId" name="job_id" value="">

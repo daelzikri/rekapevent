@@ -218,7 +218,8 @@ $jobs = $stmtJobs->fetchAll();
                 <p class="text-sm text-slate-400 mt-1">Unduh laporan resmi barang event dalam format Microsoft Excel (`.xlsx`) atau Microsoft Word (`.docx`).</p>
             </div>
 
-            <form method="GET" action="/superadmin/export.php" class="space-y-6 pt-4 border-t border-slate-800">
+            <form method="GET" action="" class="space-y-6 pt-4 border-t border-slate-800">
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Pilih Pekerjaan Event</label>
                     <select name="pekerjaan_id" class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">

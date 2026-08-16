@@ -146,7 +146,7 @@ $userList = $stmtUsers->fetchAll();
         <!-- Form Buat Akun Baru -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-6">
             <h3 class="text-lg font-bold text-white mb-4">Buat Akun Pengguna Baru (Admin / Pekerja)</h3>
-            <form method="POST" action="/superadmin/kelola_akun.php" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <form method="POST" action="" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <?= get_csrf_input() ?>
                 <input type="hidden" name="action" value="create_user">
 
@@ -235,7 +235,7 @@ $userList = $stmtUsers->fetchAll();
 
                                 <td class="px-6 py-4 text-right space-x-2">
                                     <?php if ($isLocked): ?>
-                                        <form method="POST" action="/superadmin/kelola_akun.php" class="inline">
+                                        <form method="POST" action="" class="inline">
                                             <?= get_csrf_input() ?>
                                             <input type="hidden" name="action" value="unlock_account">
                                             <input type="hidden" name="target_user_id" value="<?= $u['id'] ?>">
@@ -250,7 +250,7 @@ $userList = $stmtUsers->fetchAll();
                                     </button>
 
                                     <?php if ($u['role'] !== 'superadmin' && $u['id'] !== $user['id']): ?>
-                                        <form method="POST" action="/superadmin/kelola_akun.php" class="inline" onsubmit="return confirm('Hapus akun <?= e($u['username']) ?>?');">
+                                        <form method="POST" action="" class="inline" onsubmit="return confirm('Hapus akun <?= e($u['username']) ?>?');">
                                             <?= get_csrf_input() ?>
                                             <input type="hidden" name="action" value="delete_user">
                                             <input type="hidden" name="target_user_id" value="<?= $u['id'] ?>">
@@ -268,7 +268,7 @@ $userList = $stmtUsers->fetchAll();
     </main>
 
     <!-- Hidden Reset Password Form -->
-    <form id="resetPassForm" method="POST" action="/superadmin/kelola_akun.php" class="hidden">
+    <form id="resetPassForm" method="POST" action="" class="hidden">
         <?= get_csrf_input() ?>
         <input type="hidden" name="action" value="reset_password">
         <input type="hidden" id="resetTargetId" name="target_user_id" value="">

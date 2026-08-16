@@ -98,7 +98,8 @@ foreach ($barangList as &$b) {
 
         <!-- Filter & Search Bar -->
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl mb-8 shadow-xl">
-            <form method="GET" action="/admin/dashboard.php" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <form method="GET" action="" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Filter Pekerjaan</label>
                     <select name="pekerjaan_id" class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">

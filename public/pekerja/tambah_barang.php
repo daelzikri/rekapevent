@@ -110,7 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <span id="heic-status-text">Mengonversi format foto HEIC ke JPEG... Mohon tunggu sebentar.</span>
             </div>
 
-            <form id="tambahBarangForm" method="POST" action="/pekerja/tambah_barang.php" enctype="multipart/form-data" class="space-y-6">
+            <form id="tambahBarangForm" method="POST" action="" enctype="multipart/form-data" class="space-y-6">
+
                 <?= get_csrf_input() ?>
 
                 <!-- Input 1: Nama Barang -->
