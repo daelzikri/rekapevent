@@ -40,7 +40,8 @@ CREATE TABLE `pekerjaan` (
 CREATE TABLE `barang` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `pekerjaan_id` INT NOT NULL,
-  `kuantitas` INT NOT NULL,
+  `kuantitas` VARCHAR(255) NOT NULL,
+
   `keterangan` TEXT,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

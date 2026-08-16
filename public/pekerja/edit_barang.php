@@ -38,11 +38,11 @@ $errorMsg = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validate_csrf_or_die();
 
-    $kuantitas = (int)($_POST['kuantitas'] ?? 0);
+    $kuantitas = trim($_POST['kuantitas'] ?? '');
     $keterangan = trim($_POST['keterangan'] ?? '');
 
-    if ($kuantitas <= 0) {
-        $errorMsg = "Kuantitas barang harus lebih dari 0.";
+    if (empty($kuantitas)) {
+        $errorMsg = "Kuantitas / jumlah barang wajib diisi (teks).";
     } elseif (empty($keterangan)) {
         $errorMsg = "Keterangan/nama barang wajib diisi.";
     } else {
@@ -122,7 +122,7 @@ $successMsg = $_GET['success'] ?? null;
         <!-- Galeri Foto Terlampir Saat Ini -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-6">
             <h3 class="text-base font-bold text-white mb-4 flex items-center justify-between">
-                <span>Foto Terlampir (<?= count($fotoList) ?>)</span>
+                <span>Foto Terlampir Saat Ini (<?= count($fotoList) ?>)</span>
                 <span class="text-xs font-normal text-slate-400">Klik hapus untuk meremove foto</span>
             </h3>
 
@@ -170,8 +170,8 @@ $successMsg = $_GET['success'] ?? null;
                 <?= get_csrf_input() ?>
 
                 <div>
-                    <label for="kuantitas" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Kuantitas / Jumlah</label>
-                    <input type="number" id="kuantitas" name="kuantitas" min="1" value="<?= e($barang['kuantitas']) ?>" required
+                    <label for="kuantitas" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Kuantitas / Jumlah (Teks)</label>
+                    <input type="text" id="kuantitas" name="kuantitas" value="<?= e($barang['kuantitas']) ?>" required placeholder="Contoh: 150 Pcs, 10 Unit, 2 Box"
                         class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 </div>
 
@@ -183,8 +183,32 @@ $successMsg = $_GET['success'] ?? null;
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Tambah Foto Baru (Opsional)</label>
-                    <input id="foto" name="foto[]" type="file" multiple accept="image/*,.heic,.heif"
-                        class="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600/20 file:text-indigo-300 hover:file:bg-indigo-600/30">
+                    
+                    <div id="drop-zone" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-700 border-dashed rounded-xl bg-slate-950 hover:border-indigo-500 transition-all cursor-pointer">
+                        <div class="space-y-2 text-center">
+                            <svg class="mx-auto h-12 w-12 text-indigo-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-slate-400 justify-center">
+                                <span class="bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 px-4 py-1.5 rounded-lg border border-indigo-500/30 font-semibold transition-all">
+                                    Klik atau Drag Foto Tambahan di Sini
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500">Mendukung format HEIC (iPhone), PNG, JPG, JPEG hingga 10MB per file.</p>
+                        </div>
+                    </div>
+                    <input id="foto" name="foto[]" type="file" multiple accept="image/*,.heic,.heif" class="hidden">
+
+                    <!-- Container Pratinjau Foto Baru -->
+                    <div id="preview-section" class="hidden mt-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                                Pratinjau Foto Baru Akan Diupload (<span id="preview-count" class="text-indigo-400 font-bold">0</span> file)
+                            </span>
+                            <button type="button" id="btnClearFiles" class="text-xs text-rose-400 hover:underline">Batal Tambah Foto</button>
+                        </div>
+                        <div id="preview-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-end space-x-4 pt-4 border-t border-slate-800">
@@ -199,59 +223,142 @@ $successMsg = $_GET['success'] ?? null;
     </main>
 
     <script>
-        document.getElementById('foto').addEventListener('change', async function(e) {
-            const files = Array.from(e.target.files);
-            if (!files.length) return;
+        const fileInput = document.getElementById('foto');
+        const dropZone = document.getElementById('drop-zone');
+        const previewSection = document.getElementById('preview-section');
+        const previewGrid = document.getElementById('preview-grid');
+        const previewCount = document.getElementById('preview-count');
+        const btnClearFiles = document.getElementById('btnClearFiles');
+        const btnSubmit = document.getElementById('btnSubmit');
 
+        let selectedFilesContainer = new DataTransfer();
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-indigo-500', 'bg-indigo-950/20');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+            if (e.dataTransfer.files.length) {
+                handleFilesSelected(Array.from(e.dataTransfer.files));
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFilesSelected(Array.from(e.target.files));
+            }
+        });
+
+        async function handleFilesSelected(newFiles) {
             const notice = document.getElementById('heic-status-notice');
             const noticeText = document.getElementById('heic-status-text');
-            const btnSubmit = document.getElementById('btnSubmit');
 
-            const container = new DataTransfer();
-            let hasHeic = false;
-
-            for (let file of files) {
-                const ext = file.name.split('.').pop().toLowerCase();
-                if (ext === 'heic' || ext === 'heif' || file.type.includes('heic') || file.type.includes('heif')) {
-                    hasHeic = true;
-                    break;
-                }
-            }
+            let hasHeic = newFiles.some(f => {
+                const ext = f.name.split('.').pop().toLowerCase();
+                return ext === 'heic' || ext === 'heif' || f.type.includes('heic') || f.type.includes('heif');
+            });
 
             if (hasHeic && typeof heic2any !== 'undefined') {
                 notice.classList.remove('hidden');
                 btnSubmit.disabled = true;
                 btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
 
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const ext = file.name.split('.').pop().toLowerCase();
-
-                    if (ext === 'heic' || ext === 'heif' || file.type.includes('heic') || file.type.includes('heif')) {
-                        noticeText.textContent = `Mengonversi foto HEIC ${i+1}/${files.length}... Mohon tunggu sebentar.`;
+                for (let i = 0; i < newFiles.length; i++) {
+                    const f = newFiles[i];
+                    const ext = f.name.split('.').pop().toLowerCase();
+                    if (ext === 'heic' || ext === 'heif' || f.type.includes('heic') || f.type.includes('heif')) {
+                        noticeText.textContent = `Mengonversi foto HEIC ${i+1}/${newFiles.length}... Mohon tunggu sebentar.`;
                         try {
-                            const resBlob = await heic2any({
-                                blob: file,
-                                toType: 'image/jpeg',
-                                quality: 0.85
-                            });
+                            const resBlob = await heic2any({ blob: f, toType: 'image/jpeg', quality: 0.85 });
                             const resultBlob = Array.isArray(resBlob) ? resBlob[0] : resBlob;
-                            const convertedFile = new File([resultBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
-                            container.items.add(convertedFile);
+                            const convertedFile = new File([resultBlob], f.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+                            selectedFilesContainer.items.add(convertedFile);
                         } catch (err) {
-                            console.warn('Client HEIC conversion failed, fallback to original:', err);
-                            container.items.add(file);
+                            console.warn('Client HEIC conversion failed:', err);
+                            selectedFilesContainer.items.add(f);
                         }
                     } else {
-                        container.items.add(file);
+                        selectedFilesContainer.items.add(f);
                     }
                 }
 
-                e.target.files = container.files;
                 notice.classList.add('hidden');
                 btnSubmit.disabled = false;
                 btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                newFiles.forEach(f => selectedFilesContainer.items.add(f));
             }
+
+            fileInput.files = selectedFilesContainer.files;
+            renderPreviews();
+        }
+
+        function renderPreviews() {
+            previewGrid.innerHTML = '';
+            const files = Array.from(selectedFilesContainer.files);
+
+            if (files.length === 0) {
+                previewSection.classList.add('hidden');
+                return;
+            }
+
+            previewSection.classList.remove('hidden');
+            previewCount.textContent = files.length;
+
+            files.forEach((file, index) => {
+                const card = document.createElement('div');
+                card.className = 'relative group bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow';
+
+                const img = document.createElement('img');
+                img.className = 'w-full h-28 object-cover';
+                img.src = URL.createObjectURL(file);
+
+                const info = document.createElement('div');
+                info.className = 'p-2 bg-slate-900 border-t border-slate-800 text-[11px] truncate flex items-center justify-between text-slate-400';
+                info.innerHTML = `<span class="truncate" title="${file.name}">${file.name}</span>`;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'absolute top-1.5 right-1.5 bg-rose-600/90 text-white rounded-full p-1 hover:bg-rose-500 shadow transition-all';
+                removeBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
+                removeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeFile(index);
+                };
+
+                card.appendChild(img);
+                card.appendChild(info);
+                card.appendChild(removeBtn);
+                previewGrid.appendChild(card);
+            });
+        }
+
+        function removeFile(indexToRemove) {
+            const dt = new DataTransfer();
+            const files = Array.from(selectedFilesContainer.files);
+            files.forEach((file, index) => {
+                if (index !== indexToRemove) {
+                    dt.items.add(file);
+                }
+            });
+            selectedFilesContainer = dt;
+            fileInput.files = selectedFilesContainer.files;
+            renderPreviews();
+        }
+
+        btnClearFiles.addEventListener('click', () => {
+            selectedFilesContainer = new DataTransfer();
+            fileInput.files = selectedFilesContainer.files;
+            renderPreviews();
         });
     </script>
     <script src="/assets/js/activity-tracker.js"></script>

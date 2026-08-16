@@ -26,6 +26,14 @@ function get_db_connection(): PDO {
 
     try {
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        
+        // Auto-migration: ubah kolom kuantitas ke VARCHAR(255) jika masih INT
+        try {
+            $pdo->exec("ALTER TABLE barang MODIFY kuantitas VARCHAR(255) NOT NULL");
+        } catch (Exception $ex) {
+            // Ignore jika tabel belum ada atau kolom sudah VARCHAR
+        }
+
         return $pdo;
     } catch (PDOException $e) {
         die("

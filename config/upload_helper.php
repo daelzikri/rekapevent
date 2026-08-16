@@ -66,24 +66,54 @@ function handle_photo_uploads(array $fileInput, int $pekerjaanId, int $barangId,
     $files = [];
     if (is_array($fileInput['name'])) {
         foreach ($fileInput['name'] as $i => $name) {
-            if ($fileInput['error'][$i] === UPLOAD_ERR_OK) {
-                $files[] = [
-                    'name'     => $fileInput['name'][$i],
-                    'type'     => $fileInput['type'][$i],
-                    'tmp_name' => $fileInput['tmp_name'][$i],
-                    'size'     => $fileInput['size'][$i],
-                ];
+            $err = $fileInput['error'][$i] ?? UPLOAD_ERR_NO_FILE;
+            if ($err === UPLOAD_ERR_NO_FILE || empty($name)) {
+                continue;
             }
+            if ($err !== UPLOAD_ERR_OK) {
+                switch ($err) {
+                    case UPLOAD_ERR_INI_SIZE:
+                    case UPLOAD_ERR_FORM_SIZE:
+                        $errors[] = "File '{$name}' melebihi batas ukuran maksimal upload server.";
+                        break;
+                    case UPLOAD_ERR_PARTIAL:
+                        $errors[] = "File '{$name}' terpotong saat proses upload.";
+                        break;
+                    case UPLOAD_ERR_NO_TMP_DIR:
+                        $errors[] = "Folder temporary upload server tidak ditemukan.";
+                        break;
+                    case UPLOAD_ERR_CANT_WRITE:
+                        $errors[] = "Gagal menulis file '{$name}' ke disk server.";
+                        break;
+                    default:
+                        $errors[] = "Gagal mengupload file '{$name}' (Kode Error: {$err}).";
+                        break;
+                }
+                continue;
+            }
+            $files[] = [
+                'name'     => $fileInput['name'][$i],
+                'type'     => $fileInput['type'][$i],
+                'tmp_name' => $fileInput['tmp_name'][$i],
+                'size'     => $fileInput['size'][$i],
+            ];
         }
     } else {
-        if ($fileInput['error'] === UPLOAD_ERR_OK) {
+        $err = $fileInput['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($err === UPLOAD_ERR_OK && !empty($fileInput['name'])) {
             $files[] = $fileInput;
+        } elseif ($err !== UPLOAD_ERR_NO_FILE && !empty($fileInput['name'])) {
+            $errors[] = "Gagal mengupload file '{$fileInput['name']}' (Kode Error: {$err}).";
         }
+    }
+
+    if (empty($files)) {
+        return ['success_count' => 0, 'errors' => $errors];
     }
 
     $uploadDir = __DIR__ . "/../public/uploads/{$pekerjaanId}";
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        @mkdir($uploadDir, 0755, true);
     }
 
     foreach ($files as $f) {
