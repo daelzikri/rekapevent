@@ -9,42 +9,14 @@ function e(?string $value): string {
 }
 
 /**
- * Inisialisasi Sesi PHP dengan Parameter Cookie Aman & Mendukung Proxy/HTTPS
+ * Inisialisasi Sesi PHP — Sesederhana mungkin, tanpa kustomisasi apapun.
+ * Pendekatan: biarkan PHP/Hostinger mengurus semuanya, kita hanya panggil session_start().
  */
 function init_session(): void {
     if (session_status() === PHP_SESSION_NONE) {
-        // 1. Nama cookie unik khusus aplikasi ini untuk cegah tabrakan cookie PHPSESSID dari domain induk/subdomain lain
-        session_name('REKAPEVENT_SESSID');
-
-        // 2. Gunakan folder direktori simpan sesi khusus di dalam proyek agar tidak terhapus oleh garbage collector Hostinger
-        $sessionDir = __DIR__ . '/../sessions';
-        if (!is_dir($sessionDir)) {
-            @mkdir($sessionDir, 0700, true);
-        }
-        if (is_dir($sessionDir) && is_writable($sessionDir)) {
-            @session_save_path($sessionDir);
-        }
-
-        // 3. Konfigurasi parameter cookie universal
-        @ini_set('session.cookie_httponly', '1');
-        @ini_set('session.cookie_path', '/');
-        @ini_set('session.cookie_samesite', 'Lax');
-
-        session_set_cookie_params([
-            'lifetime' => 0,
-            'path'     => '/',
-            'domain'   => '',
-            'secure'   => false,
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-
         @session_start();
     }
 }
-
-
-
 
 /**
  * Kirim respon JSON
@@ -57,7 +29,7 @@ function json_response(array $data, int $statusCode = 200): void {
 }
 
 /**
- * Redirect ke URL dengan memastikan data sesi telah ditulis secara sempurna ke disk
+ * Redirect ke URL
  */
 function redirect(string $url): void {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -67,9 +39,8 @@ function redirect(string $url): void {
     exit;
 }
 
-
 /**
- * Catat aksi ke audit_log
+ * Catat aksi ke audit_log (silent fail - jangan pernah crash user flow)
  */
 function log_audit(PDO $pdo, ?int $userId, string $aksi, ?string $detail = null): void {
     try {
@@ -82,7 +53,6 @@ function log_audit(PDO $pdo, ?int $userId, string $aksi, ?string $detail = null)
             ':ip'      => $ip
         ]);
     } catch (Exception $e) {
-        // Fallback silently if audit log insert fails to prevent breaking main user flow
         error_log("Audit Log Error: " . $e->getMessage());
     }
 }

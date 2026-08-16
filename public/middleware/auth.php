@@ -8,7 +8,8 @@ require_once __DIR__ . '/../../config/csrf.php';
 init_session();
 
 /**
- * Autentikasi Pengguna Standar Sesi PHP
+ * Autentikasi Pengguna — Sesederhana mungkin.
+ * Jika belum login, redirect ke login page. TANPA menghancurkan sesi apapun.
  */
 function authenticate_user(): array {
     if (!empty($GLOBALS['currentUser'])) {
@@ -16,6 +17,8 @@ function authenticate_user(): array {
     }
 
     if (empty($_SESSION['user_id'])) {
+        // Debug: log ke error_log agar bisa dilihat di Hostinger
+        error_log("AUTH_DEBUG: SESSION kosong saat akses " . ($_SERVER['REQUEST_URI'] ?? '???') . " | session_id=" . session_id() . " | cookie=" . ($_COOKIE[session_name()] ?? 'NONE'));
         redirect("/auth/login.php");
     }
 
@@ -32,8 +35,6 @@ function authenticate_user(): array {
     return $user;
 }
 
-
-
 /**
  * Validasi Role Pengguna
  */
@@ -46,16 +47,5 @@ function require_role(array $allowedRoles): array {
     return $user;
 }
 
-/**
- * Reset dan Hapus Sesi
- */
-function clear_session_and_redirect(string $redirectUrl): void {
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_unset();
-        session_destroy();
-    }
-    redirect($redirectUrl);
-}
-
-// Jalankan autentikasi otomatis saat file middleware di-include (kecuali untuk halaman bebas auth)
+// Jalankan autentikasi saat middleware di-include
 $user = authenticate_user();

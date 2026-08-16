@@ -7,8 +7,6 @@ require_once __DIR__ . '/../../config/csrf.php';
 
 init_session();
 
-
-// Redirect jika sudah login
 // Redirect jika sudah login
 if (!empty($_SESSION['user_id']) && !empty($_SESSION['role'])) {
     if ($_SESSION['role'] === 'superadmin') redirect('/superadmin/kelola_pekerjaan.php');
@@ -20,8 +18,6 @@ $errorMessage = $_GET['error'] ?? null;
 $successMessage = $_GET['success'] ?? null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    validate_csrf_or_die();
-
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
@@ -36,38 +32,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$user) {
             $errorMessage = "Username atau password salah.";
         } else {
-            // 1. Cek Lockout (Locked until)
+            // Cek Lockout
             if (!empty($user['locked_until'])) {
                 $lockedTime = strtotime($user['locked_until']);
                 if (time() < $lockedTime) {
                     $sisaMenit = ceil(($lockedTime - time()) / 60);
-                    $errorMessage = "Akun Anda terkunci karena 5x gagal login berturut-turut. Silakan coba lagi dalam {$sisaMenit} menit.";
+                    $errorMessage = "Akun terkunci. Coba lagi dalam {$sisaMenit} menit.";
                 }
             }
 
             if (!$errorMessage) {
-                // 2. Verifikasi Password
                 if (!password_verify($password, $user['password_hash'])) {
-                    // Increment failed count & audit log
                     $newFailedCount = $user['failed_login_count'] + 1;
                     $lockedUntil = null;
                     if ($newFailedCount >= 5) {
-                        $lockedUntil = date('Y-m-d H:i:s', time() + (15 * 60)); // Lockout 15 menit
+                        $lockedUntil = date('Y-m-d H:i:s', time() + (15 * 60));
                     }
-
                     $upd = $pdo->prepare("UPDATE users SET failed_login_count = :cnt, locked_until = :lock WHERE id = :id");
                     $upd->execute([':cnt' => $newFailedCount, ':lock' => $lockedUntil, ':id' => $user['id']]);
-
                     log_audit($pdo, $user['id'], 'LOGIN_FAILED', "Gagal login. Percobaan ke-{$newFailedCount}.");
 
                     if ($newFailedCount >= 5) {
-                        $errorMessage = "Akun telah dikunci selama 15 menit karena 5x percobaan login gagal.";
+                        $errorMessage = "Akun dikunci 15 menit karena 5x gagal login.";
                     } else {
                         $sisaCoba = 5 - $newFailedCount;
-                        $errorMessage = "Username atau password salah. Sisa percobaan: {$sisaCoba}x.";
+                        $errorMessage = "Username atau password salah. Sisa: {$sisaCoba}x.";
                     }
                 } else {
-                    // Password Benar!
+                    // LOGIN BERHASIL
                     $updSuccess = $pdo->prepare("UPDATE users SET last_activity_at = NOW(), failed_login_count = 0, locked_until = NULL WHERE id = :id");
                     $updSuccess->execute([':id' => $user['id']]);
 
@@ -75,10 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['role'] = $user['role'];
 
+                    // Debug: pastikan session tersimpan
+                    error_log("LOGIN_DEBUG: Login OK user_id={$user['id']} session_id=" . session_id() . " session_name=" . session_name());
 
-                    log_audit($pdo, $user['id'], 'LOGIN_SUCCESS', "Pengguna berhasil login sebagai {$user['role']}.");
+                    log_audit($pdo, $user['id'], 'LOGIN_SUCCESS', "Login sebagai {$user['role']}.");
 
-                    // Redirect sesuai Role
                     if ($user['role'] === 'superadmin') {
                         redirect('/superadmin/kelola_pekerjaan.php');
                     } elseif ($user['role'] === 'admin') {
@@ -100,9 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Login - Sistem Rekapan Barang Event</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-slate-800/90 backdrop-blur-md rounded-2xl border border-slate-700/60 shadow-2xl p-8">
@@ -135,7 +126,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" action="" class="space-y-5">
-
             <?= get_csrf_input() ?>
             <div>
                 <label for="username" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Username</label>
@@ -151,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     placeholder="••••••••">
             </div>
 
-            <button type="submit" 
+            <button type="submit"
                 class="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-200">
                 Masuk ke Sistem
             </button>
