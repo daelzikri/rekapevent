@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!$errorMsg) {
-                redirect("/pekerja/edit_barang.php?id={$barangId}&success=Data+barang+berhasil+diperbarui.");
+                response_success_redirect("/pekerja/edit_barang.php?id={$barangId}&success=Data+barang+berhasil+diperbarui.", 'Data Barang Berhasil Diperbarui!');
             }
         } catch (Throwable $t) {
             error_log("Edit Barang Error: " . $t->getMessage());

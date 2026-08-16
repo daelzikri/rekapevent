@@ -73,11 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     log_audit($pdo, $user['id'], 'LOGIN_SUCCESS', "Login sebagai {$user['role']}.");
 
                     if ($user['role'] === 'superadmin') {
-                        redirect('/superadmin/kelola_pekerjaan.php');
+                        response_success_redirect('/superadmin/kelola_pekerjaan.php', 'Login Berhasil! Mengalihkan ke Halaman Superadmin...');
                     } elseif ($user['role'] === 'admin') {
-                        redirect('/admin/dashboard.php');
+                        response_success_redirect('/admin/dashboard.php', 'Login Berhasil! Mengalihkan ke Dashboard Admin...');
                     } else {
-                        redirect('/pekerja/index.php');
+                        response_success_redirect('/pekerja/index.php', 'Login Berhasil! Mengalihkan ke Halaman Pekerja...');
                     }
                 }
             }

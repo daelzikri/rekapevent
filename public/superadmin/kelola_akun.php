@@ -285,6 +285,6 @@ $userList = $stmtUsers->fetchAll();
             }
         }
     </script>
-    <script src="/assets/js/activity-tracker.js"></script>
+
 </body>
 </html>

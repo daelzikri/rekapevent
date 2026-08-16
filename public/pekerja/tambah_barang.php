@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (!$errorMsg) {
-                redirect('/pekerja/index.php?success=Barang+berhasil+ditambahkan.');
+                response_success_redirect('/pekerja/index.php?success=Barang+berhasil+ditambahkan.', 'Barang Berhasil Ditambahkan!');
             }
         } catch (Throwable $t) {
             error_log("Tambah Barang Error: " . $t->getMessage());

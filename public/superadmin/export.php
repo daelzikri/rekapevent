@@ -252,6 +252,6 @@ $jobs = $stmtJobs->fetchAll();
 
     </main>
 
-    <script src="/assets/js/activity-tracker.js"></script>
+
 </body>
 </html>

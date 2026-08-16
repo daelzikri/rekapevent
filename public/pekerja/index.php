@@ -190,7 +190,6 @@ $errorMsg = $_GET['error'] ?? null;
         <?php endif; ?>
     </main>
 
-    <!-- Activity Tracker JS for Idle Timeout -->
-    <script src="/assets/js/activity-tracker.js"></script>
+
 </body>
 </html>
