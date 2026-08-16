@@ -112,11 +112,5 @@
         }
     }
 
-    // 4. SendBeacon saat browser / tab ditutup
-    window.addEventListener('beforeunload', () => {
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon('/auth/logout.php');
-        }
-    });
-
 })();
+

@@ -4,9 +4,8 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/helpers.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+init_session();
+
 
 $userId = $_SESSION['user_id'] ?? null;
 

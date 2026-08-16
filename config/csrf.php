@@ -1,9 +1,9 @@
 <?php
 // config/csrf.php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/helpers.php';
+init_session();
+
 
 function generate_csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {

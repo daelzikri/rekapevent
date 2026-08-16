@@ -5,19 +5,8 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/helpers.php';
 require_once __DIR__ . '/../../config/csrf.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    // Configure secure session cookie params
-    $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path' => '/',
-        'domain' => '',
-        'secure' => $isSecure,
-        'httponly' => true,
-        'samesite' => 'Strict'
-    ]);
-    session_start();
-}
+init_session();
+
 
 /**
  * Autentikasi Pengguna & Cek Single Session Token

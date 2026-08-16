@@ -1,9 +1,9 @@
 <?php
 // public/index.php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/helpers.php';
+init_session();
+
 
 if (!empty($_SESSION['user_id']) && !empty($_SESSION['role'])) {
     $role = $_SESSION['role'];

@@ -5,9 +5,8 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/helpers.php';
 require_once __DIR__ . '/../../config/csrf.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+init_session();
+
 
 // Redirect jika sudah login
 if (!empty($_SESSION['user_id']) && !empty($_SESSION['token'])) {
