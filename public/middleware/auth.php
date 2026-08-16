@@ -12,7 +12,7 @@ init_session();
  */
 function authenticate_user(): array {
     if (empty($_SESSION['user_id'])) {
-        clear_session_and_redirect("/auth/login.php");
+        redirect("/auth/login.php");
     }
 
     $pdo = get_db_connection();
@@ -21,12 +21,13 @@ function authenticate_user(): array {
     $user = $stmt->fetch();
 
     if (!$user) {
-        clear_session_and_redirect("/auth/login.php?error=User+tidak+ditemukan");
+        redirect("/auth/login.php?error=User+tidak+ditemukan");
     }
 
     $GLOBALS['currentUser'] = $user;
     return $user;
 }
+
 
 /**
  * Validasi Role Pengguna

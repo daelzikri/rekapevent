@@ -35,31 +35,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($keteranganVal)) {
         $errorMsg = "Keterangan / deskripsi barang wajib diisi.";
     } else {
-        // Insert record barang baru (4 Input: nama_barang, kuantitas, keterangan, foto)
-        $stmtBarang = $pdo->prepare("INSERT INTO barang (pekerjaan_id, nama_barang, kuantitas, keterangan) VALUES (:pekerjaan_id, :nama_barang, :kuantitas, :keterangan)");
-        $stmtBarang->execute([
-            ':pekerjaan_id' => $pekerjaan['id'],
-            ':nama_barang'  => $namaBarangVal,
-            ':kuantitas'    => $kuantitasVal,
-            ':keterangan'   => $keteranganVal
-        ]);
-        $barangId = (int)$pdo->lastInsertId();
+        try {
+            // Insert record barang baru (4 Input: nama_barang, kuantitas, keterangan, foto)
+            $stmtBarang = $pdo->prepare("INSERT INTO barang (pekerjaan_id, nama_barang, kuantitas, keterangan) VALUES (:pekerjaan_id, :nama_barang, :kuantitas, :keterangan)");
+            $stmtBarang->execute([
+                ':pekerjaan_id' => $pekerjaan['id'],
+                ':nama_barang'  => $namaBarangVal,
+                ':kuantitas'    => $kuantitasVal,
+                ':keterangan'   => $keteranganVal
+            ]);
+            $barangId = (int)$pdo->lastInsertId();
 
-        log_audit($pdo, $user['id'], 'TAMBAH_BARANG', "Menambahkan barang '{$namaBarangVal}' ID #{$barangId} ke pekerjaan ID #{$pekerjaan['id']}.");
+            log_audit($pdo, $user['id'], 'TAMBAH_BARANG', "Menambahkan barang '{$namaBarangVal}' ID #{$barangId} ke pekerjaan ID #{$pekerjaan['id']}.");
 
-        // Penanganan upload foto
-        if (!empty($_FILES['foto'])) {
-            $uploadResult = handle_photo_uploads($_FILES['foto'], $pekerjaan['id'], $barangId, $pdo);
-            if (!empty($uploadResult['errors'])) {
-                $errorMsg = implode(" ", $uploadResult['errors']);
+            // Penanganan upload foto
+            if (!empty($_FILES['foto'])) {
+                $uploadResult = handle_photo_uploads($_FILES['foto'], $pekerjaan['id'], $barangId, $pdo);
+                if (!empty($uploadResult['errors'])) {
+                    $errorMsg = implode(" ", $uploadResult['errors']);
+                }
             }
-        }
 
-        if (!$errorMsg) {
-            redirect('/pekerja/index.php?success=Barang+berhasil+ditambahkan.');
+            if (!$errorMsg) {
+                redirect('/pekerja/index.php?success=Barang+berhasil+ditambahkan.');
+            }
+        } catch (Throwable $t) {
+            error_log("Tambah Barang Error: " . $t->getMessage());
+            $errorMsg = "Gagal menyimpan data barang: " . $t->getMessage();
         }
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="id">

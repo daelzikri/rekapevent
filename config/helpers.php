@@ -44,12 +44,16 @@ function json_response(array $data, int $statusCode = 200): void {
 }
 
 /**
- * Redirect ke URL
+ * Redirect ke URL dengan memastikan data sesi telah ditulis secara sempurna ke disk
  */
 function redirect(string $url): void {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
     header("Location: " . $url);
     exit;
 }
+
 
 /**
  * Catat aksi ke audit_log

@@ -71,12 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $updSuccess = $pdo->prepare("UPDATE users SET last_activity_at = NOW(), failed_login_count = 0, locked_until = NULL WHERE id = :id");
                     $updSuccess->execute([':id' => $user['id']]);
 
-                    // Regenerate ID Sesi PHP untuk cegah Session Fixation
-                    session_regenerate_id(true);
-
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['role'] = $user['role'];
+
 
                     log_audit($pdo, $user['id'], 'LOGIN_SUCCESS', "Pengguna berhasil login sebagai {$user['role']}.");
 

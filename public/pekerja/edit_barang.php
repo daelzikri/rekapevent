@@ -49,30 +49,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($keterangan)) {
         $errorMsg = "Keterangan / detail barang wajib diisi.";
     } else {
-        // Update record barang
-        $stmtUpd = $pdo->prepare("UPDATE barang SET nama_barang = :nama_barang, kuantitas = :kuantitas, keterangan = :keterangan, updated_at = NOW() WHERE id = :id");
-        $stmtUpd->execute([
-            ':nama_barang' => $namaBarang,
-            ':kuantitas'   => $kuantitas,
-            ':keterangan'  => $keterangan,
-            ':id'          => $barangId
-        ]);
+        try {
+            // Update record barang
+            $stmtUpd = $pdo->prepare("UPDATE barang SET nama_barang = :nama_barang, kuantitas = :kuantitas, keterangan = :keterangan, updated_at = NOW() WHERE id = :id");
+            $stmtUpd->execute([
+                ':nama_barang' => $namaBarang,
+                ':kuantitas'   => $kuantitas,
+                ':keterangan'  => $keterangan,
+                ':id'          => $barangId
+            ]);
 
-        log_audit($pdo, $user['id'], 'EDIT_BARANG', "Mengubah data barang '{$namaBarang}' ID #{$barangId}.");
+            log_audit($pdo, $user['id'], 'EDIT_BARANG', "Mengubah data barang '{$namaBarang}' ID #{$barangId}.");
 
-        // Penanganan upload foto baru jika ada
-        if (!empty($_FILES['foto'])) {
-            $uploadResult = handle_photo_uploads($_FILES['foto'], $barang['pekerjaan_id'], $barangId, $pdo);
-            if (!empty($uploadResult['errors'])) {
-                $errorMsg = implode(" ", $uploadResult['errors']);
+            // Penanganan upload foto baru jika ada
+            if (!empty($_FILES['foto'])) {
+                $uploadResult = handle_photo_uploads($_FILES['foto'], $barang['pekerjaan_id'], $barangId, $pdo);
+                if (!empty($uploadResult['errors'])) {
+                    $errorMsg = implode(" ", $uploadResult['errors']);
+                }
             }
-        }
 
-        if (!$errorMsg) {
-            redirect("/pekerja/edit_barang.php?id={$barangId}&success=Data+barang+berhasil+diperbarui.");
+            if (!$errorMsg) {
+                redirect("/pekerja/edit_barang.php?id={$barangId}&success=Data+barang+berhasil+diperbarui.");
+            }
+        } catch (Throwable $t) {
+            error_log("Edit Barang Error: " . $t->getMessage());
+            $errorMsg = "Gagal memperbarui data barang: " . $t->getMessage();
         }
     }
 }
+
 
 $successMsg = $_GET['success'] ?? null;
 ?>
