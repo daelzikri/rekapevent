@@ -13,25 +13,24 @@ function e(?string $value): string {
  */
 function init_session(): void {
     if (session_status() === PHP_SESSION_NONE) {
-        $isSecure = (
-            (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') ||
-            (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') ||
-            (!empty($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) !== 'off') ||
-            (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
-        );
+        // Konfigurasi cookie sesi universal (stabil untuk HTTP, HTTPS, & Proxy Hostinger)
+        @ini_set('session.cookie_httponly', '1');
+        @ini_set('session.cookie_path', '/');
+        @ini_set('session.cookie_samesite', 'Lax');
 
         session_set_cookie_params([
             'lifetime' => 0,
-            'path' => '/',
-            'domain' => '',
-            'secure' => $isSecure,
+            'path'     => '/',
+            'domain'   => '',
+            'secure'   => false, // Gunakan false agar cookie PHPSESSID tidak dibuang browser jika koneksi proxy/HTTP
             'httponly' => true,
             'samesite' => 'Lax'
         ]);
 
-        session_start();
+        @session_start();
     }
 }
+
 
 
 /**
