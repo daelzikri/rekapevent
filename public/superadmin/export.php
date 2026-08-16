@@ -61,8 +61,8 @@ if ($type === 'excel' || $type === 'word') {
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Header Tabel
-        $headers = ['No', 'Nama Pekerjaan / Proyek', 'Penanggung Jawab', 'Kuantitas', 'Keterangan Barang', 'Total Foto'];
-        $cols = ['A', 'B', 'C', 'D', 'E', 'F'];
+        $headers = ['No', 'Nama Pekerjaan / Proyek', 'Penanggung Jawab', 'Nama Barang', 'Kuantitas', 'Keterangan Barang', 'Total Foto'];
+        $cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
         
         foreach ($headers as $idx => $headerText) {
             $col = $cols[$idx];
@@ -76,7 +76,7 @@ if ($type === 'excel' || $type === 'word') {
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]]
         ];
-        $sheet->getStyle('A4:F4')->applyFromArray($headerStyle);
+        $sheet->getStyle('A4:G4')->applyFromArray($headerStyle);
 
         // Populate Data Rows
         $rowNum = 5;
@@ -85,16 +85,17 @@ if ($type === 'excel' || $type === 'word') {
             $sheet->setCellValue("A{$rowNum}", $no++);
             $sheet->setCellValue("B{$rowNum}", $item['nama_pekerjaan']);
             $sheet->setCellValue("C{$rowNum}", $item['nama_pekerja']);
-            $sheet->setCellValue("D{$rowNum}", $item['kuantitas']);
-            $sheet->setCellValue("E{$rowNum}", $item['keterangan']);
-            $sheet->setCellValue("F{$rowNum}", $item['total_foto']);
+            $sheet->setCellValue("D{$rowNum}", !empty($item['nama_barang']) ? $item['nama_barang'] : '-');
+            $sheet->setCellValue("E{$rowNum}", $item['kuantitas']);
+            $sheet->setCellValue("F{$rowNum}", $item['keterangan']);
+            $sheet->setCellValue("G{$rowNum}", $item['total_foto']);
 
             // Align Center for No, Qty, Total Foto
             $sheet->getStyle("A{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("D{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("F{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("E{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("G{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-            $sheet->getStyle("A{$rowNum}:F{$rowNum}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $sheet->getStyle("A{$rowNum}:G{$rowNum}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
             $rowNum++;
         }
 
@@ -136,22 +137,24 @@ if ($type === 'excel' || $type === 'word') {
 
         // Table Header
         $table->addRow();
-        $table->addCell(800, $headerStyle)->addText('No', $headerTextStyle, ['alignment' => Jc::CENTER]);
-        $table->addCell(2500, $headerStyle)->addText('Pekerjaan', $headerTextStyle);
-        $table->addCell(1500, $headerStyle)->addText('PJ Pekerja', $headerTextStyle);
+        $table->addCell(600, $headerStyle)->addText('No', $headerTextStyle, ['alignment' => Jc::CENTER]);
+        $table->addCell(2000, $headerStyle)->addText('Pekerjaan', $headerTextStyle);
+        $table->addCell(1200, $headerStyle)->addText('PJ Pekerja', $headerTextStyle);
+        $table->addCell(1800, $headerStyle)->addText('Nama Barang', $headerTextStyle);
         $table->addCell(1000, $headerStyle)->addText('Qty', $headerTextStyle, ['alignment' => Jc::CENTER]);
-        $table->addCell(3000, $headerStyle)->addText('Keterangan', $headerTextStyle);
-        $table->addCell(1000, $headerStyle)->addText('Foto', $headerTextStyle, ['alignment' => Jc::CENTER]);
+        $table->addCell(2400, $headerStyle)->addText('Keterangan', $headerTextStyle);
+        $table->addCell(800, $headerStyle)->addText('Foto', $headerTextStyle, ['alignment' => Jc::CENTER]);
 
         $no = 1;
         foreach ($data as $item) {
             $table->addRow();
-            $table->addCell(800)->addText($no++, [], ['alignment' => Jc::CENTER]);
-            $table->addCell(2500)->addText($item['nama_pekerjaan']);
-            $table->addCell(1500)->addText($item['nama_pekerja']);
+            $table->addCell(600)->addText($no++, [], ['alignment' => Jc::CENTER]);
+            $table->addCell(2000)->addText($item['nama_pekerjaan']);
+            $table->addCell(1200)->addText($item['nama_pekerja']);
+            $table->addCell(1800)->addText(!empty($item['nama_barang']) ? $item['nama_barang'] : '-');
             $table->addCell(1000)->addText($item['kuantitas'], [], ['alignment' => Jc::CENTER]);
-            $table->addCell(3000)->addText($item['keterangan']);
-            $table->addCell(1000)->addText($item['total_foto'] . ' foto', [], ['alignment' => Jc::CENTER]);
+            $table->addCell(2400)->addText($item['keterangan']);
+            $table->addCell(800)->addText($item['total_foto'] . ' foto', [], ['alignment' => Jc::CENTER]);
         }
 
         $filename = "Rekapan_Barang_Event_" . date('Ymd_His') . ".docx";

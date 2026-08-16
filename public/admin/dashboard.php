@@ -29,7 +29,7 @@ if ($filterPekerjaanId > 0) {
 }
 
 if (!empty($search)) {
-    $sql .= " AND (b.keterangan LIKE :search OR p.nama_pekerjaan LIKE :search)";
+    $sql .= " AND (b.nama_barang LIKE :search OR b.keterangan LIKE :search OR p.nama_pekerjaan LIKE :search)";
     $params[':search'] = "%{$search}%";
 }
 
@@ -113,7 +113,7 @@ foreach ($barangList as &$b) {
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cari Barang / Event</label>
-                    <input type="text" name="search" value="<?= e($search) ?>" placeholder="Kata kunci keterangan..." 
+                    <input type="text" name="search" value="<?= e($search) ?>" placeholder="Nama barang / keterangan..." 
                         class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
@@ -146,9 +146,10 @@ foreach ($barangList as &$b) {
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-950/60 text-xs uppercase text-slate-400 border-b border-slate-800">
                             <tr>
-                                <th class="px-6 py-3.5 font-semibold">Pekerjaan / Pekerja</th>
+                                <th class="px-6 py-3.5 font-semibold">Pekerjaan / PJ</th>
+                                <th class="px-6 py-3.5 font-semibold">Nama Barang</th>
                                 <th class="px-6 py-3.5 font-semibold">Qty</th>
-                                <th class="px-6 py-3.5 font-semibold">Keterangan Barang</th>
+                                <th class="px-6 py-3.5 font-semibold">Keterangan Detail</th>
                                 <th class="px-6 py-3.5 font-semibold">Foto Terlampir</th>
                                 <th class="px-6 py-3.5 font-semibold">Tanggal Input</th>
                             </tr>
@@ -159,6 +160,9 @@ foreach ($barangList as &$b) {
                                     <td class="px-6 py-4">
                                         <div class="font-semibold text-white"><?= e($item['nama_pekerjaan']) ?></div>
                                         <div class="text-xs text-slate-400">PJ: <?= e($item['nama_pekerja']) ?></div>
+                                    </td>
+                                    <td class="px-6 py-4 font-bold text-white">
+                                        <?= e(!empty($item['nama_barang']) ? $item['nama_barang'] : '-') ?>
                                     </td>
                                     <td class="px-6 py-4 font-bold text-blue-400">
                                         <?= e($item['kuantitas']) ?>

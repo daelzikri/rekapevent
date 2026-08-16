@@ -159,12 +159,15 @@ $errorMsg = $_GET['error'] ?? null;
                             </div>
 
                             <!-- Details -->
-                            <div class="p-5 flex-grow flex flex-col justify-between">
+                            <div class="p-5 flex-grow flex flex-col justify-between space-y-3">
                                 <div>
-                                    <h4 class="text-sm font-semibold text-slate-200 line-clamp-3 mb-2">
-                                        <?= e($item['keterangan']) ?>
+                                    <h4 class="text-base font-bold text-white mb-1">
+                                        <?= e(!empty($item['nama_barang']) ? $item['nama_barang'] : $item['keterangan']) ?>
                                     </h4>
-                                    <p class="text-xs text-slate-500">
+                                    <p class="text-xs text-slate-300 line-clamp-2 mb-2">
+                                        <?= e($item['keterangan']) ?>
+                                    </p>
+                                    <p class="text-[11px] text-slate-500">
                                         Diinput: <?= date('d M Y H:i', strtotime($item['created_at'])) ?>
                                     </p>
                                 </div>

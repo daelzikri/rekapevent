@@ -7,44 +7,22 @@ require_once __DIR__ . '/../../config/csrf.php';
 
 init_session();
 
-
 /**
- * Autentikasi Pengguna & Cek Single Session Token
+ * Autentikasi Pengguna Standar Sesi PHP
  */
 function authenticate_user(): array {
-    if (empty($_SESSION['user_id']) || empty($_SESSION['token'])) {
+    if (empty($_SESSION['user_id'])) {
         clear_session_and_redirect("/auth/login.php");
     }
 
     $pdo = get_db_connection();
-    $stmt = $pdo->prepare("SELECT id, username, role, session_token, last_activity_at FROM users WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT id, username, role FROM users WHERE id = :id");
     $stmt->execute([':id' => $_SESSION['user_id']]);
     $user = $stmt->fetch();
 
     if (!$user) {
         clear_session_and_redirect("/auth/login.php?error=User+tidak+ditemukan");
     }
-
-    // 1. Validasi Token Sesi Eksklusif (Single Session)
-    if ($user['session_token'] !== $_SESSION['token']) {
-        clear_session_and_redirect("/auth/login.php?error=Sesi+Anda+telah+diakhiri+karena+login+di+perangkat+lain.");
-    }
-
-    // 2. Validasi Inaktivitas Idle 30 Menit (1800 detik)
-    if (!empty($user['last_activity_at'])) {
-        $lastActivity = strtotime($user['last_activity_at']);
-        if ((time() - $lastActivity) > 1800) { // 30 Menit
-            // Clear session_token in DB
-            $updateStmt = $pdo->prepare("UPDATE users SET session_token = NULL WHERE id = :id");
-            $updateStmt->execute([':id' => $user['id']]);
-            log_audit($pdo, $user['id'], 'SESSION_EXPIRED', 'Sesi berakhir otomatis karena 30 menit tidak ada aktivitas.');
-            clear_session_and_redirect("/auth/login.php?error=Sesi+telah+berakhir+karena+30+menit+tidak+ada+aktivitas.");
-        }
-    }
-
-    // 3. Update last_activity_at untuk request aktif
-    $updateAct = $pdo->prepare("UPDATE users SET last_activity_at = NOW() WHERE id = :id");
-    $updateAct->execute([':id' => $user['id']]);
 
     $GLOBALS['currentUser'] = $user;
     return $user;

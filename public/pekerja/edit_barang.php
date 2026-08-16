@@ -38,23 +38,27 @@ $errorMsg = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validate_csrf_or_die();
 
+    $namaBarang = trim($_POST['nama_barang'] ?? '');
     $kuantitas = trim($_POST['kuantitas'] ?? '');
     $keterangan = trim($_POST['keterangan'] ?? '');
 
-    if (empty($kuantitas)) {
-        $errorMsg = "Kuantitas / jumlah barang wajib diisi (teks).";
+    if (empty($namaBarang)) {
+        $errorMsg = "Nama barang wajib diisi.";
+    } elseif (empty($kuantitas)) {
+        $errorMsg = "Kuantitas / jumlah barang wajib diisi.";
     } elseif (empty($keterangan)) {
-        $errorMsg = "Keterangan/nama barang wajib diisi.";
+        $errorMsg = "Keterangan / detail barang wajib diisi.";
     } else {
         // Update record barang
-        $stmtUpd = $pdo->prepare("UPDATE barang SET kuantitas = :kuantitas, keterangan = :keterangan, updated_at = NOW() WHERE id = :id");
+        $stmtUpd = $pdo->prepare("UPDATE barang SET nama_barang = :nama_barang, kuantitas = :kuantitas, keterangan = :keterangan, updated_at = NOW() WHERE id = :id");
         $stmtUpd->execute([
-            ':kuantitas'  => $kuantitas,
-            ':keterangan' => $keterangan,
-            ':id'         => $barangId
+            ':nama_barang' => $namaBarang,
+            ':kuantitas'   => $kuantitas,
+            ':keterangan'  => $keterangan,
+            ':id'          => $barangId
         ]);
 
-        log_audit($pdo, $user['id'], 'EDIT_BARANG', "Mengubah data barang ID #{$barangId}.");
+        log_audit($pdo, $user['id'], 'EDIT_BARANG', "Mengubah data barang '{$namaBarang}' ID #{$barangId}.");
 
         // Penanganan upload foto baru jika ada
         if (!empty($_FILES['foto'])) {
@@ -164,25 +168,35 @@ $successMsg = $_GET['success'] ?? null;
 
         <!-- Form Edit -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8">
-            <h3 class="text-lg font-bold text-white mb-6">Ubah Data Kuantitas & Keterangan</h3>
+            <h3 class="text-lg font-bold text-white mb-6">Ubah Data Barang</h3>
 
             <form method="POST" action="/pekerja/edit_barang.php?id=<?= $barangId ?>" enctype="multipart/form-data" class="space-y-6">
                 <?= get_csrf_input() ?>
 
+                <!-- Input 1: Nama Barang -->
                 <div>
-                    <label for="kuantitas" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Kuantitas / Jumlah (Teks)</label>
+                    <label for="nama_barang" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">1. Nama Barang</label>
+                    <input type="text" id="nama_barang" name="nama_barang" value="<?= e($barang['nama_barang']) ?>" required placeholder="Contoh: Kursi Futura, Meja Round Table"
+                        class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
+
+                <!-- Input 2: Kuantitas (Teks) -->
+                <div>
+                    <label for="kuantitas" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">2. Kuantitas / Jumlah (Teks)</label>
                     <input type="text" id="kuantitas" name="kuantitas" value="<?= e($barang['kuantitas']) ?>" required placeholder="Contoh: 150 Pcs, 10 Unit, 2 Box"
                         class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                 </div>
 
+                <!-- Input 3: Keterangan / Deskripsi -->
                 <div>
-                    <label for="keterangan" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Keterangan / Deskripsi Barang</label>
+                    <label for="keterangan" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">3. Keterangan / Detail Barang</label>
                     <textarea id="keterangan" name="keterangan" rows="4" required
                         class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"><?= e($barang['keterangan']) ?></textarea>
                 </div>
 
+                <!-- Input 4: Tambah Foto Baru -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Tambah Foto Baru (Opsional)</label>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">4. Tambah Foto Baru (Opsional)</label>
                     
                     <div id="drop-zone" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-700 border-dashed rounded-xl bg-slate-950 hover:border-indigo-500 transition-all cursor-pointer">
                         <div class="space-y-2 text-center">
@@ -361,6 +375,5 @@ $successMsg = $_GET['success'] ?? null;
             renderPreviews();
         });
     </script>
-    <script src="/assets/js/activity-tracker.js"></script>
 </body>
 </html>

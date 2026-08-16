@@ -9,16 +9,11 @@ init_session();
 
 
 // Redirect jika sudah login
-if (!empty($_SESSION['user_id']) && !empty($_SESSION['token'])) {
-    $pdo = get_db_connection();
-    $stmt = $pdo->prepare("SELECT role FROM users WHERE id = :id AND session_token = :token");
-    $stmt->execute([':id' => $_SESSION['user_id'], ':token' => $_SESSION['token']]);
-    $u = $stmt->fetch();
-    if ($u) {
-        if ($u['role'] === 'superadmin') redirect('/superadmin/kelola_pekerjaan.php');
-        if ($u['role'] === 'admin') redirect('/admin/dashboard.php');
-        if ($u['role'] === 'pekerja') redirect('/pekerja/index.php');
-    }
+// Redirect jika sudah login
+if (!empty($_SESSION['user_id']) && !empty($_SESSION['role'])) {
+    if ($_SESSION['role'] === 'superadmin') redirect('/superadmin/kelola_pekerjaan.php');
+    if ($_SESSION['role'] === 'admin') redirect('/admin/dashboard.php');
+    if ($_SESSION['role'] === 'pekerja') redirect('/pekerja/index.php');
 }
 
 $errorMessage = $_GET['error'] ?? null;
@@ -73,39 +68,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 } else {
                     // Password Benar!
-                    // 4. Cek Single Session Token di Database
-                    $tokenExisiting = $user['session_token'];
-                    $lastAct = $user['last_activity_at'] ? strtotime($user['last_activity_at']) : 0;
-                    $isSessionActive = (!empty($tokenExisiting) && (time() - $lastAct) <= 1800);
+                    $updSuccess = $pdo->prepare("UPDATE users SET last_activity_at = NOW(), failed_login_count = 0, locked_until = NULL WHERE id = :id");
+                    $updSuccess->execute([':id' => $user['id']]);
 
-                    if ($isSessionActive) {
-                        // Tolak Login
-                        log_audit($pdo, $user['id'], 'LOGIN_BLOCKED_SINGLE_SESSION', 'Login ditolak karena akun sedang aktif di perangkat lain.');
-                        $errorMessage = "Akun sedang digunakan oleh perangkat/pengguna lain.";
+                    // Regenerate ID Sesi PHP untuk cegah Session Fixation
+                    session_regenerate_id(true);
+
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['role'] = $user['role'];
+
+                    log_audit($pdo, $user['id'], 'LOGIN_SUCCESS', "Pengguna berhasil login sebagai {$user['role']}.");
+
+                    // Redirect sesuai Role
+                    if ($user['role'] === 'superadmin') {
+                        redirect('/superadmin/kelola_pekerjaan.php');
+                    } elseif ($user['role'] === 'admin') {
+                        redirect('/admin/dashboard.php');
                     } else {
-                        // Izinkan Login & Generate Token Sesi Baru
-                        $newToken = bin2hex(random_bytes(32));
-                        $updSuccess = $pdo->prepare("UPDATE users SET session_token = :token, last_activity_at = NOW(), failed_login_count = 0, locked_until = NULL WHERE id = :id");
-                        $updSuccess->execute([':token' => $newToken, ':id' => $user['id']]);
-
-                        // Regenerate ID Sesi PHP untuk cegah Session Fixation
-                        session_regenerate_id(true);
-
-                        $_SESSION['user_id'] = $user['id'];
-                        $_SESSION['username'] = $user['username'];
-                        $_SESSION['role'] = $user['role'];
-                        $_SESSION['token'] = $newToken;
-
-                        log_audit($pdo, $user['id'], 'LOGIN_SUCCESS', "Pengguna berhasil login sebagai {$user['role']}.");
-
-                        // Redirect sesuai Role
-                        if ($user['role'] === 'superadmin') {
-                            redirect('/superadmin/kelola_pekerjaan.php');
-                        } elseif ($user['role'] === 'admin') {
-                            redirect('/admin/dashboard.php');
-                        } else {
-                            redirect('/pekerja/index.php');
-                        }
+                        redirect('/pekerja/index.php');
                     }
                 }
             }

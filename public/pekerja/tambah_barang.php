@@ -17,30 +17,35 @@ if (!$pekerjaan) {
 }
 
 $errorMsg = null;
+$namaBarangVal = '';
 $kuantitasVal = '';
 $keteranganVal = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validate_csrf_or_die();
 
+    $namaBarangVal = trim($_POST['nama_barang'] ?? '');
     $kuantitasVal = trim($_POST['kuantitas'] ?? '');
     $keteranganVal = trim($_POST['keterangan'] ?? '');
 
-    if (empty($kuantitasVal)) {
-        $errorMsg = "Kuantitas / jumlah barang wajib diisi (teks).";
+    if (empty($namaBarangVal)) {
+        $errorMsg = "Nama barang wajib diisi.";
+    } elseif (empty($kuantitasVal)) {
+        $errorMsg = "Kuantitas / jumlah barang wajib diisi.";
     } elseif (empty($keteranganVal)) {
-        $errorMsg = "Keterangan/nama barang wajib diisi.";
+        $errorMsg = "Keterangan / deskripsi barang wajib diisi.";
     } else {
-        // Insert record barang baru dengan kuantitas teks
-        $stmtBarang = $pdo->prepare("INSERT INTO barang (pekerjaan_id, kuantitas, keterangan) VALUES (:pekerjaan_id, :kuantitas, :keterangan)");
+        // Insert record barang baru (4 Input: nama_barang, kuantitas, keterangan, foto)
+        $stmtBarang = $pdo->prepare("INSERT INTO barang (pekerjaan_id, nama_barang, kuantitas, keterangan) VALUES (:pekerjaan_id, :nama_barang, :kuantitas, :keterangan)");
         $stmtBarang->execute([
             ':pekerjaan_id' => $pekerjaan['id'],
+            ':nama_barang'  => $namaBarangVal,
             ':kuantitas'    => $kuantitasVal,
             ':keterangan'   => $keteranganVal
         ]);
         $barangId = (int)$pdo->lastInsertId();
 
-        log_audit($pdo, $user['id'], 'TAMBAH_BARANG', "Menambahkan barang ID #{$barangId} ke pekerjaan ID #{$pekerjaan['id']}.");
+        log_audit($pdo, $user['id'], 'TAMBAH_BARANG', "Menambahkan barang '{$namaBarangVal}' ID #{$barangId} ke pekerjaan ID #{$pekerjaan['id']}.");
 
         // Penanganan upload foto
         if (!empty($_FILES['foto'])) {
@@ -108,22 +113,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form id="tambahBarangForm" method="POST" action="/pekerja/tambah_barang.php" enctype="multipart/form-data" class="space-y-6">
                 <?= get_csrf_input() ?>
 
+                <!-- Input 1: Nama Barang -->
                 <div>
-                    <label for="kuantitas" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Kuantitas / Jumlah (Bisa Isikan Teks)</label>
+                    <label for="nama_barang" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">1. Nama Barang</label>
+                    <input type="text" id="nama_barang" name="nama_barang" value="<?= e($namaBarangVal) ?>" required placeholder="Contoh: Kursi Futura, Meja Round Table, Sound System"
+                        class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
+
+                <!-- Input 2: Kuantitas (Teks) -->
+                <div>
+                    <label for="kuantitas" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">2. Kuantitas / Jumlah (Teks)</label>
                     <input type="text" id="kuantitas" name="kuantitas" value="<?= e($kuantitasVal) ?>" required placeholder="Contoh: 150 Pcs, 10 Unit, 2 Box, 1 Roll"
                         class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
                     <p class="text-xs text-slate-500 mt-1">Anda bebas memasukkan format teks seperti "10 Unit", "5 Box", "100 Pcs", dll.</p>
                 </div>
 
+                <!-- Input 3: Keterangan / Deskripsi -->
                 <div>
-                    <label for="keterangan" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Keterangan / Deskripsi Barang</label>
+                    <label for="keterangan" class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">3. Keterangan / Detail Barang</label>
                     <textarea id="keterangan" name="keterangan" rows="4" required
-                        placeholder="Contoh: Kursi Futura Cover Putih Pita Gold - Kondisi Baik"
+                        placeholder="Contoh: Cover Putih Pita Gold - Kondisi Baik, Siap Dipasang"
                         class="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"><?= e($keteranganVal) ?></textarea>
                 </div>
 
+                <!-- Input 4: Foto Barang (Multi-upload dengan live preview) -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Upload Foto Barang (HEIC, PNG, JPG, JPEG)</label>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">4. Upload Foto Barang (HEIC, PNG, JPG, JPEG)</label>
                     
                     <div id="drop-zone" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-700 border-dashed rounded-xl bg-slate-950 hover:border-indigo-500 transition-all cursor-pointer">
                         <div class="space-y-2 text-center">
@@ -301,6 +316,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             renderPreviews();
         });
     </script>
-    <script src="/assets/js/activity-tracker.js"></script>
 </body>
 </html>

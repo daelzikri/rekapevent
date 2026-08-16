@@ -14,12 +14,12 @@ INSERT INTO `pekerjaan` (`id`, `nama_pekerjaan`, `user_id`, `dibuat_oleh`) VALUE
 (1, 'Wedding Reception - Grand Ballroom Hotel Mulia', 3, 1),
 (2, 'Tech Launch Event 2026 - Main Stage Hall A', 4, 1);
 
-INSERT INTO `barang` (`id`, `pekerjaan_id`, `kuantitas`, `keterangan`) VALUES
-(1, 1, 150, 'Kursi Futura Cover Putih Pita Gold'),
-(2, 1, 10, 'Meja Round Table 180cm + Taplak Champagne'),
-(3, 1, 2, 'Sound System Line Array 5000 Watt'),
-(4, 2, 1, 'Videotron LED P2.5 Indoor 6x3 Meter'),
-(5, 2, 20, 'Lighting Moving Head Beam 230W');
+INSERT INTO `barang` (`id`, `pekerjaan_id`, `nama_barang`, `kuantitas`, `keterangan`) VALUES
+(1, 1, 'Kursi Futura', '150 Pcs', 'Cover Putih Pita Gold'),
+(2, 1, 'Meja Round Table 180cm', '10 Unit', 'Taplak Champagne'),
+(3, 1, 'Sound System Line Array', '2 Set', 'Power 5000 Watt'),
+(4, 2, 'Videotron LED P2.5', '1 Unit', 'Indoor 6x3 Meter'),
+(5, 2, 'Lighting Moving Head Beam', '20 Unit', 'Power 230W');
 
 INSERT INTO `audit_log` (`user_id`, `aksi`, `detail`, `ip_address`) VALUES
 (1, 'SYSTEM_INIT', 'Sistem berhasil di-seed dengan data awal.', '127.0.0.1');
