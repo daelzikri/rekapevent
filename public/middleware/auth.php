@@ -17,6 +17,7 @@ function authenticate_user(): array {
     }
 
     if (empty($_SESSION['user_id']) || empty($_SESSION['session_token'])) {
+        unset($_SESSION['user_id'], $_SESSION['session_token'], $_SESSION['role'], $_SESSION['username']);
         redirect("/auth/login.php");
     }
 

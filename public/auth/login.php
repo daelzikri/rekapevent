@@ -7,11 +7,21 @@ require_once __DIR__ . '/../../config/csrf.php';
 
 init_session();
 
-// Redirect jika sudah login
-if (!empty($_SESSION['user_id']) && !empty($_SESSION['role'])) {
-    if ($_SESSION['role'] === 'superadmin') redirect('/superadmin/kelola_pekerjaan.php');
-    if ($_SESSION['role'] === 'admin') redirect('/admin/dashboard.php');
-    if ($_SESSION['role'] === 'pekerja') redirect('/pekerja/index.php');
+// Redirect jika sudah login dengan sesi valid
+if (!empty($_SESSION['user_id']) && !empty($_SESSION['session_token']) && !empty($_SESSION['role'])) {
+    $pdoCheck = get_db_connection();
+    $stmtCk = $pdoCheck->prepare("SELECT id FROM users WHERE id = :id AND session_token = :token");
+    $stmtCk->execute([':id' => $_SESSION['user_id'], ':token' => $_SESSION['session_token']]);
+    if ($stmtCk->fetch()) {
+        if ($_SESSION['role'] === 'superadmin') redirect('/superadmin/kelola_pekerjaan.php');
+        if ($_SESSION['role'] === 'admin') redirect('/admin/dashboard.php');
+        if ($_SESSION['role'] === 'pekerja') redirect('/pekerja/index.php');
+    }
+}
+
+// Bersihkan data sesi yang usang / tanpa session_token agar login form selalu tampil tanpa loop
+if (!empty($_SESSION['user_id']) && empty($_SESSION['session_token'])) {
+    unset($_SESSION['user_id'], $_SESSION['session_token'], $_SESSION['role'], $_SESSION['username']);
 }
 
 $errorMessage = $_GET['error'] ?? null;
