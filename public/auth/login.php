@@ -59,25 +59,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $errorMessage = "Username atau password salah. Sisa: {$sisaCoba}x.";
                     }
                 } else {
-                    // LOGIN BERHASIL
-                    $updSuccess = $pdo->prepare("UPDATE users SET last_activity_at = NOW(), failed_login_count = 0, locked_until = NULL WHERE id = :id");
-                    $updSuccess->execute([':id' => $user['id']]);
+                    // Cek Pembatasan 1 Akun = 1 Sesi Aktif
+                    $timeoutSeconds = 15 * 60; // 15 Menit Batas Inaktivitas
+                    $isSessionActive = false;
+                    $sisaMenit = 0;
 
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
-                    $_SESSION['role'] = $user['role'];
+                    if (!empty($user['session_token']) && !empty($user['last_activity_at'])) {
+                        $lastActiveTime = strtotime($user['last_activity_at']);
+                        $diffTime = time() - $lastActiveTime;
 
-                    // Debug: pastikan session tersimpan
-                    error_log("LOGIN_DEBUG: Login OK user_id={$user['id']} session_id=" . session_id() . " session_name=" . session_name());
+                        if ($diffTime < $timeoutSeconds) {
+                            $isSessionActive = true;
+                            $sisaMenit = max(1, ceil(($timeoutSeconds - $diffTime) / 60));
+                        }
+                    }
 
-                    log_audit($pdo, $user['id'], 'LOGIN_SUCCESS', "Login sebagai {$user['role']}.");
-
-                    if ($user['role'] === 'superadmin') {
-                        response_success_redirect('/superadmin/kelola_pekerjaan.php', 'Login Berhasil! Mengalihkan ke Halaman Superadmin...');
-                    } elseif ($user['role'] === 'admin') {
-                        response_success_redirect('/admin/dashboard.php', 'Login Berhasil! Mengalihkan ke Dashboard Admin...');
+                    if ($isSessionActive) {
+                        $errorMessage = "Akun '{$username}' sedang aktif digunakan di perangkat/browser lain. 1 akun hanya dapat digunakan oleh 1 orang dalam satu waktu (Aktif {$sisaMenit} menit lagi).";
+                        log_audit($pdo, $user['id'], 'LOGIN_BLOCKED', "Percobaan login ditolak karena akun sedang aktif di perangkat lain.");
                     } else {
-                        response_success_redirect('/pekerja/index.php', 'Login Berhasil! Mengalihkan ke Halaman Pekerja...');
+                        // LOGIN BERHASIL -> Generasi Session Token Unik
+                        $sessionToken = bin2hex(random_bytes(32));
+
+                        $updSuccess = $pdo->prepare("UPDATE users SET session_token = :token, last_activity_at = NOW(), failed_login_count = 0, locked_until = NULL WHERE id = :id");
+                        $updSuccess->execute([
+                            ':token' => $sessionToken,
+                            ':id'    => $user['id']
+                        ]);
+
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['session_token'] = $sessionToken;
+                        $_SESSION['username'] = $user['username'];
+                        $_SESSION['role'] = $user['role'];
+
+                        log_audit($pdo, $user['id'], 'LOGIN_SUCCESS', "Login berhasil sebagai {$user['role']}.");
+
+                        if ($user['role'] === 'superadmin') {
+                            response_success_redirect('/superadmin/kelola_pekerjaan.php', 'Login Berhasil! Mengalihkan ke Halaman Superadmin...');
+                        } elseif ($user['role'] === 'admin') {
+                            response_success_redirect('/admin/dashboard.php', 'Login Berhasil! Mengalihkan ke Dashboard Admin...');
+                        } else {
+                            response_success_redirect('/pekerja/index.php', 'Login Berhasil! Mengalihkan ke Halaman Pekerja...');
+                        }
                     }
                 }
             }

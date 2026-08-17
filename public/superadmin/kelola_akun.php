@@ -59,7 +59,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtUnl->execute([':id' => $targetUserId]);
 
             log_audit($pdo, $user['id'], 'UNLOCK_ACCOUNT', "Membuka kunci akun ID #{$targetUserId}.");
-            redirect('/superadmin/kelola_akun.php?success=Akun+berhasil+เปิด/di-unlock.');
+            redirect('/superadmin/kelola_akun.php?success=Akun+berhasil+di-unlock.');
+        }
+    } elseif ($action === 'reset_session') {
+        $targetUserId = (int)($_POST['target_user_id'] ?? 0);
+        if ($targetUserId > 0) {
+            $stmtResSess = $pdo->prepare("UPDATE users SET session_token = NULL, last_activity_at = NULL WHERE id = :id");
+            $stmtResSess->execute([':id' => $targetUserId]);
+
+            log_audit($pdo, $user['id'], 'RESET_SESSION', "Mereset sesi aktif akun ID #{$targetUserId}.");
+            redirect('/superadmin/kelola_akun.php?success=Sesi+aktif+akun+berhasil+direset.');
         }
     } elseif ($action === 'delete_user') {
         $targetUserId = (int)($_POST['target_user_id'] ?? 0);
@@ -240,6 +249,15 @@ $userList = $stmtUsers->fetchAll();
                                             <input type="hidden" name="action" value="unlock_account">
                                             <input type="hidden" name="target_user_id" value="<?= $u['id'] ?>">
                                             <button type="submit" class="px-2.5 py-1 text-xs rounded bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 font-semibold">Unlock</button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <?php if ($isActive): ?>
+                                        <form method="POST" action="" class="inline" onsubmit="return confirm('Keluarkan sesi aktif akun <?= e($u['username']) ?>?');">
+                                            <?= get_csrf_input() ?>
+                                            <input type="hidden" name="action" value="reset_session">
+                                            <input type="hidden" name="target_user_id" value="<?= $u['id'] ?>">
+                                            <button type="submit" class="px-2.5 py-1 text-xs rounded bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 font-semibold" title="Keluarkan / Hapus sesi aktif akun ini">Reset Sesi</button>
                                         </form>
                                     <?php endif; ?>
 

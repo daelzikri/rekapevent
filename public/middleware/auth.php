@@ -16,19 +16,44 @@ function authenticate_user(): array {
         return $GLOBALS['currentUser'];
     }
 
-    if (empty($_SESSION['user_id'])) {
-        // Debug: log ke error_log agar bisa dilihat di Hostinger
-        error_log("AUTH_DEBUG: SESSION kosong saat akses " . ($_SERVER['REQUEST_URI'] ?? '???') . " | session_id=" . session_id() . " | cookie=" . ($_COOKIE[session_name()] ?? 'NONE'));
+    if (empty($_SESSION['user_id']) || empty($_SESSION['session_token'])) {
         redirect("/auth/login.php");
     }
 
     $pdo = get_db_connection();
-    $stmt = $pdo->prepare("SELECT id, username, role FROM users WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT id, username, role, session_token, last_activity_at FROM users WHERE id = :id");
     $stmt->execute([':id' => $_SESSION['user_id']]);
     $user = $stmt->fetch();
 
     if (!$user) {
-        redirect("/auth/login.php?error=User+tidak+ditemukan");
+        unset($_SESSION['user_id'], $_SESSION['session_token'], $_SESSION['role'], $_SESSION['username']);
+        redirect("/auth/login.php?error=User+tidak+ditemukan.");
+    }
+
+    // 1. Cek Token Sesi — Jika token tidak cocok, artinya akun di-login dari tempat lain atau di-reset
+    if (empty($user['session_token']) || $user['session_token'] !== $_SESSION['session_token']) {
+        unset($_SESSION['user_id'], $_SESSION['session_token'], $_SESSION['role'], $_SESSION['username']);
+        redirect("/auth/login.php?error=Sesi+Anda+telah+diakhiri+atau+akun+di-login+dari+perangkat+lain.");
+    }
+
+    // 2. Cek Inactivity Timeout (15 Menit)
+    $timeoutSeconds = 15 * 60;
+    if (!empty($user['last_activity_at'])) {
+        $lastActive = strtotime($user['last_activity_at']);
+        if ((time() - $lastActive) > $timeoutSeconds) {
+            // Hapus sesi di DB
+            $updExp = $pdo->prepare("UPDATE users SET session_token = NULL, last_activity_at = NULL WHERE id = :id");
+            $updExp->execute([':id' => $user['id']]);
+
+            unset($_SESSION['user_id'], $_SESSION['session_token'], $_SESSION['role'], $_SESSION['username']);
+            redirect("/auth/login.php?error=Sesi+Anda+telah+berakhir+karena+15+menit+tidak+ada+aktivitas.");
+        }
+    }
+
+    // Update last_activity_at jika sudah > 30 detik dari aktivitas terakhir
+    if (empty($user['last_activity_at']) || (time() - strtotime($user['last_activity_at'])) > 30) {
+        $updAct = $pdo->prepare("UPDATE users SET last_activity_at = NOW() WHERE id = :id");
+        $updAct->execute([':id' => $user['id']]);
     }
 
     $GLOBALS['currentUser'] = $user;

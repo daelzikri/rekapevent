@@ -11,6 +11,9 @@ $userId = $_SESSION['user_id'] ?? null;
 if ($userId) {
     try {
         $pdo = get_db_connection();
+        $stmtOut = $pdo->prepare("UPDATE users SET session_token = NULL, last_activity_at = NULL WHERE id = :id");
+        $stmtOut->execute([':id' => $userId]);
+
         log_audit($pdo, $userId, 'LOGOUT', 'Pengguna melakukan logout.');
     } catch (Exception $e) {
         error_log("Logout Error: " . $e->getMessage());
