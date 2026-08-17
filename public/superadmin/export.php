@@ -269,19 +269,19 @@ if ($type === 'excel' || $type === 'word') {
             'cellMargin'  => 80,
             'cantSplit'   => true,
         ];
-        $headerStyle = ['backgroundColor' => '4F46E5'];
+        $headerCellStyle = ['bgColor' => '4F46E5', 'valign' => 'center'];
         $headerTextStyle = ['bold' => true, 'color' => 'FFFFFF', 'size' => 9];
 
         $phpWord->addTableStyle('RekapanTable', $tableStyle);
         $table = $section->addTable('RekapanTable');
 
         // Table Header
-        $table->addRow();
+        $table->addRow(400, ['tblHeader' => true]);
         foreach ($columnKeys as $idx => $key) {
             $w = $colWidths[$key];
             $text = $headers[$idx];
             $align = in_array($key, ['no', 'kuantitas', 'foto'], true) ? Jc::CENTER : Jc::LEFT;
-            $table->addCell($w, $headerStyle)->addText($text, $headerTextStyle, ['alignment' => $align]);
+            $table->addCell($w, $headerCellStyle)->addText($text, $headerTextStyle, ['alignment' => $align]);
         }
 
         // Table Rows
