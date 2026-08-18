@@ -28,318 +28,354 @@ if (!in_array($maxPhotoSize, [60, 80, 100, 120], true)) {
     $maxPhotoSize = 80;
 }
 
+ini_set('memory_limit', '512M');
+set_time_limit(300);
+
+$exportError = null;
+
 if ($type === 'excel' || $type === 'word') {
-    // Query data sesuai filter pekerjaan_id
-    $sql = "
-        SELECT b.*, p.nama_pekerjaan, u.username AS nama_pekerja
-        FROM barang b
-        JOIN pekerjaan p ON b.pekerjaan_id = p.id
-        JOIN users u ON p.user_id = u.id
-        WHERE 1=1
-    ";
-    $params = [];
-    if ($pekerjaanId > 0) {
-        $sql .= " AND b.pekerjaan_id = :pekerjaan_id";
-        $params[':pekerjaan_id'] = $pekerjaanId;
-    }
-    $sql .= " ORDER BY p.nama_pekerjaan ASC, b.created_at ASC";
+    try {
+        // Query data sesuai filter pekerjaan_id
+        $sql = "
+            SELECT b.*, p.nama_pekerjaan, u.username AS nama_pekerja
+            FROM barang b
+            JOIN pekerjaan p ON b.pekerjaan_id = p.id
+            JOIN users u ON p.user_id = u.id
+            WHERE 1=1
+        ";
+        $params = [];
+        if ($pekerjaanId > 0) {
+            $sql .= " AND b.pekerjaan_id = :pekerjaan_id";
+            $params[':pekerjaan_id'] = $pekerjaanId;
+        }
+        $sql .= " ORDER BY p.nama_pekerjaan ASC, b.created_at ASC";
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $data = $stmt->fetchAll();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $data = $stmt->fetchAll();
 
-    // Ambil daftar foto untuk setiap barang
-    $publicDir = realpath(__DIR__ . '/..');
-    foreach ($data as &$item) {
-        $stmtFoto = $pdo->prepare("SELECT file_path FROM foto_barang WHERE barang_id = :barang_id ORDER BY id ASC");
-        $stmtFoto->execute([':barang_id' => $item['id']]);
-        $item['foto_list'] = $stmtFoto->fetchAll(PDO::FETCH_COLUMN);
-    }
-    unset($item);
+        // Ambil daftar foto untuk setiap barang
+        $publicDir = realpath(__DIR__ . '/..') ?: (__DIR__ . '/..');
+        foreach ($data as &$item) {
+            $stmtFoto = $pdo->prepare("SELECT file_path FROM foto_barang WHERE barang_id = :barang_id ORDER BY id ASC");
+            $stmtFoto->execute([':barang_id' => $item['id']]);
+            $item['foto_list'] = $stmtFoto->fetchAll(PDO::FETCH_COLUMN);
+        }
+        unset($item);
 
-    // Susun Header Kolom & Key secara Dinamis
-    $headers = ['No'];
-    $columnKeys = ['no'];
+        // Susun Header Kolom & Key secara Dinamis
+        $headers = ['No'];
+        $columnKeys = ['no'];
 
-    if ($includeEvent) {
-        $headers[] = 'Nama Event';
-        $columnKeys[] = 'nama_pekerjaan';
-    }
-
-    if ($includePekerja) {
-        $headers[] = 'Pekerja Input';
-        $columnKeys[] = 'nama_pekerja';
-    }
-
-    $headers[] = 'Nama Barang';
-    $columnKeys[] = 'nama_barang';
-
-    $headers[] = 'Foto';
-    $columnKeys[] = 'foto';
-
-    $headers[] = 'Qty';
-    $columnKeys[] = 'kuantitas';
-
-    $headers[] = 'Keterangan';
-    $columnKeys[] = 'keterangan';
-
-    log_audit($pdo, $user['id'], 'EXPORT_DATA', "Mengunduh export format " . strtoupper($type) . " (Pekerjaan ID: {$pekerjaanId}).");
-
-    if ($type === 'excel') {
-        // --- GENERATE EXCEL ---
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Rekapan Barang Event');
-
-        $cols = range('A', chr(ord('A') + count($headers) - 1));
-        $lastCol = end($cols);
-
-        // Judul Utama
-        $sheet->setCellValue('A1', 'REKAPAN BARANG EVENT');
-        $sheet->mergeCells("A1:{$lastCol}1");
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        $sheet->setCellValue('A2', 'Tanggal Export: ' . date('d F Y H:i:s'));
-        $sheet->mergeCells("A2:{$lastCol}2");
-        $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(10);
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        // Header Tabel (Row 4)
-        foreach ($headers as $idx => $headerText) {
-            $colLetter = $cols[$idx];
-            $sheet->setCellValue("{$colLetter}4", $headerText);
+        if ($includeEvent) {
+            $headers[] = 'Nama Event';
+            $columnKeys[] = 'nama_pekerjaan';
         }
 
-        // Style Header
-        $headerStyle = [
-            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4F46E5']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]]
-        ];
-        $sheet->getStyle("A4:{$lastCol}4")->applyFromArray($headerStyle);
-        $sheet->getRowDimension(4)->setRowHeight(25);
+        if ($includePekerja) {
+            $headers[] = 'Pekerja Input';
+            $columnKeys[] = 'nama_pekerja';
+        }
 
-        // Populate Data Rows
-        $rowNum = 5;
-        $no = 1;
-        $fotoColIdx = array_search('foto', $columnKeys, true);
-        $fotoColLetter = $cols[$fotoColIdx];
+        $headers[] = 'Nama Barang';
+        $columnKeys[] = 'nama_barang';
 
-        foreach ($data as $item) {
+        $headers[] = 'Foto';
+        $columnKeys[] = 'foto';
+
+        $headers[] = 'Qty';
+        $columnKeys[] = 'kuantitas';
+
+        $headers[] = 'Keterangan';
+        $columnKeys[] = 'keterangan';
+
+        log_audit($pdo, $user['id'], 'EXPORT_DATA', "Mengunduh export format " . strtoupper($type) . " (Pekerjaan ID: {$pekerjaanId}).");
+
+        if ($type === 'excel') {
+            // --- GENERATE EXCEL ---
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Rekapan Barang Event');
+
+            $cols = range('A', chr(ord('A') + count($headers) - 1));
+            $lastCol = end($cols);
+
+            // Judul Utama
+            $sheet->setCellValue('A1', 'REKAPAN BARANG EVENT');
+            $sheet->mergeCells("A1:{$lastCol}1");
+            $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+            $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            $sheet->setCellValue('A2', 'Tanggal Export: ' . date('d F Y H:i:s'));
+            $sheet->mergeCells("A2:{$lastCol}2");
+            $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(10);
+            $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            // Header Tabel (Row 4)
+            foreach ($headers as $idx => $headerText) {
+                $colLetter = $cols[$idx];
+                $sheet->setCellValue("{$colLetter}4", $headerText);
+            }
+
+            // Style Header
+            $headerStyle = [
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4F46E5']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]]
+            ];
+            $sheet->getStyle("A4:{$lastCol}4")->applyFromArray($headerStyle);
+            $sheet->getRowDimension(4)->setRowHeight(25);
+
+            // Populate Data Rows
+            $rowNum = 5;
+            $no = 1;
+            $fotoColIdx = array_search('foto', $columnKeys, true);
+            $fotoColLetter = $cols[$fotoColIdx];
+
+            foreach ($data as $item) {
+                foreach ($columnKeys as $cIdx => $key) {
+                    $colLetter = $cols[$cIdx];
+                    $cellRef = "{$colLetter}{$rowNum}";
+
+                    if ($key === 'no') {
+                        $sheet->setCellValue($cellRef, $no);
+                        $sheet->getStyle($cellRef)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    } elseif ($key === 'nama_pekerjaan') {
+                        $sheet->setCellValue($cellRef, (string)($item['nama_pekerjaan'] ?? ''));
+                    } elseif ($key === 'nama_pekerja') {
+                        $sheet->setCellValue($cellRef, (string)($item['nama_pekerja'] ?? ''));
+                    } elseif ($key === 'nama_barang') {
+                        $sheet->setCellValue($cellRef, !empty($item['nama_barang']) ? (string)$item['nama_barang'] : '-');
+                    } elseif ($key === 'kuantitas') {
+                        $sheet->setCellValue($cellRef, (string)($item['kuantitas'] ?? '0'));
+                        $sheet->getStyle($cellRef)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    } elseif ($key === 'keterangan') {
+                        $sheet->setCellValue($cellRef, (string)($item['keterangan'] ?? ''));
+                    } elseif ($key === 'foto') {
+                        // Embed Foto ke dalam Sel Excel (Vertikal)
+                        $validPhotos = [];
+                        if (!empty($item['foto_list'])) {
+                            foreach ($item['foto_list'] as $relPath) {
+                                $cleanRelPath = '/' . ltrim($relPath, '/\\');
+                                $absPath = realpath($publicDir . $cleanRelPath) ?: ($publicDir . $cleanRelPath);
+                                if ($absPath && file_exists($absPath)) {
+                                    $imgData = @getimagesize($absPath);
+                                    if (is_array($imgData) && !empty($imgData[2]) && in_array($imgData[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_BMP], true)) {
+                                        $validPhotos[] = $absPath;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!empty($validPhotos)) {
+                            $sheet->setCellValue($cellRef, '');
+                            $yOffset = 5;
+                            foreach ($validPhotos as $fIdx => $absPath) {
+                                try {
+                                    $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+                                    $drawing->setName('Foto_' . ($fIdx + 1));
+                                    $drawing->setDescription('Foto Barang');
+                                    $drawing->setPath($absPath);
+                                    $drawing->setHeight($maxPhotoSize);
+                                    $drawing->setCoordinates($cellRef);
+                                    $drawing->setOffsetX(5);
+                                    $drawing->setOffsetY($yOffset);
+                                    $drawing->setWorksheet($sheet);
+
+                                    $yOffset += $maxPhotoSize + 5;
+                                } catch (\Throwable $exDraw) {
+                                    error_log("Gagal menyisipkan foto ke Excel: " . $exDraw->getMessage());
+                                }
+                            }
+
+                            $totalHeightPt = (count($validPhotos) * ($maxPhotoSize + 5) + 10) * 0.75;
+                            $sheet->getRowDimension($rowNum)->setRowHeight(max(40, $totalHeightPt));
+                        } else {
+                            $sheet->setCellValue($cellRef, '-');
+                            $sheet->getStyle($cellRef)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        }
+                    }
+
+                    // Vertical alignment center untuk semua sel
+                    $sheet->getStyle($cellRef)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+                }
+
+                $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                $no++;
+                $rowNum++;
+            }
+
+            // Auto dimension width kecuali kolom foto
             foreach ($columnKeys as $cIdx => $key) {
                 $colLetter = $cols[$cIdx];
-                $cellRef = "{$colLetter}{$rowNum}";
-
-                if ($key === 'no') {
-                    $sheet->setCellValue($cellRef, $no);
-                    $sheet->getStyle($cellRef)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                } elseif ($key === 'nama_pekerjaan') {
-                    $sheet->setCellValue($cellRef, $item['nama_pekerjaan']);
-                } elseif ($key === 'nama_pekerja') {
-                    $sheet->setCellValue($cellRef, $item['nama_pekerja']);
-                } elseif ($key === 'nama_barang') {
-                    $sheet->setCellValue($cellRef, !empty($item['nama_barang']) ? $item['nama_barang'] : '-');
-                } elseif ($key === 'kuantitas') {
-                    $sheet->setCellValue($cellRef, $item['kuantitas']);
-                    $sheet->getStyle($cellRef)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                if ($key === 'foto') {
+                    $sheet->getColumnDimension($colLetter)->setWidth(max(16, round(($maxPhotoSize * 0.15) + 4)));
                 } elseif ($key === 'keterangan') {
-                    $sheet->setCellValue($cellRef, $item['keterangan']);
-                } elseif ($key === 'foto') {
-                    // Embed Foto ke dalam Sel Excel (Vertikal)
-                    $validPhotos = [];
-                    if (!empty($item['foto_list'])) {
-                        foreach ($item['foto_list'] as $relPath) {
-                            $absPath = realpath($publicDir . $relPath);
-                            if ($absPath && file_exists($absPath)) {
-                                $validPhotos[] = $absPath;
-                            }
-                        }
-                    }
-
-                    if (!empty($validPhotos)) {
-                        $sheet->setCellValue($cellRef, '');
-                        $yOffset = 5;
-                        foreach ($validPhotos as $fIdx => $absPath) {
-                            $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
-                            $drawing->setName('Foto_' . ($fIdx + 1));
-                            $drawing->setDescription('Foto Barang');
-                            $drawing->setPath($absPath);
-                            $drawing->setHeight($maxPhotoSize);
-                            $drawing->setCoordinates($cellRef);
-                            $drawing->setOffsetX(5);
-                            $drawing->setOffsetY($yOffset);
-                            $drawing->setWorksheet($sheet);
-
-                            $yOffset += $maxPhotoSize + 5;
-                        }
-
-                        $totalHeightPt = (count($validPhotos) * ($maxPhotoSize + 5) + 10) * 0.75;
-                        $sheet->getRowDimension($rowNum)->setRowHeight(max(40, $totalHeightPt));
-                    } else {
-                        $sheet->setCellValue($cellRef, '-');
-                        $sheet->getStyle($cellRef)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    }
+                    $sheet->getColumnDimension($colLetter)->setWidth(30);
+                    $sheet->getStyle("{$colLetter}5:{$colLetter}" . ($rowNum - 1))->getAlignment()->setWrapText(true);
+                } else {
+                    $sheet->getColumnDimension($colLetter)->setAutoSize(true);
                 }
-
-                // Vertical alignment center untuk semua sel
-                $sheet->getStyle($cellRef)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
             }
 
-            $sheet->getStyle("A{$rowNum}:{$lastCol}{$rowNum}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-            $no++;
-            $rowNum++;
-        }
-
-        // Auto dimension width kecuali kolom foto
-        foreach ($columnKeys as $cIdx => $key) {
-            $colLetter = $cols[$cIdx];
-            if ($key === 'foto') {
-                $sheet->getColumnDimension($colLetter)->setWidth(max(16, round(($maxPhotoSize * 0.15) + 4)));
-            } elseif ($key === 'keterangan') {
-                $sheet->getColumnDimension($colLetter)->setWidth(30);
-                $sheet->getStyle("{$colLetter}5:{$colLetter}" . ($rowNum - 1))->getAlignment()->setWrapText(true);
-            } else {
-                $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+            $filename = "Rekapan_Barang_Event_" . date('Ymd_His') . ".xlsx";
+            
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
             }
-        }
 
-        $filename = "Rekapan_Barang_Event_" . date('Ymd_His') . ".xlsx";
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
 
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-        exit;
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+            exit;
 
-    } elseif ($type === 'word') {
-        // --- GENERATE WORD ---
-        $phpWord = new PhpWord();
-        
-        // Halaman tetap PORTRAIT dengan Margin A4 Presisi
-        $section = $phpWord->addSection([
-            'orientation'  => 'portrait',
-            'marginLeft'   => 800,
-            'marginRight'  => 800,
-            'marginTop'    => 800,
-            'marginBottom' => 800,
-        ]);
+        } elseif ($type === 'word') {
+            // --- GENERATE WORD ---
+            $phpWord = new PhpWord();
+            
+            // Halaman tetap PORTRAIT dengan Margin A4 Presisi
+            $section = $phpWord->addSection([
+                'orientation'  => 'portrait',
+                'marginLeft'   => 800,
+                'marginRight'  => 800,
+                'marginTop'    => 800,
+                'marginBottom' => 800,
+            ]);
 
-        // Judul Dokumen
-        $section->addTitle('REKAPAN BARANG EVENT', 1);
-        $section->addText('Tanggal Export: ' . date('d F Y H:i:s'), ['italic' => true, 'size' => 9]);
-        $section->addTextBreak(1);
+            // Judul Dokumen
+            $section->addTitle('REKAPAN BARANG EVENT', 1);
+            $section->addText('Tanggal Export: ' . date('d F Y H:i:s'), ['italic' => true, 'size' => 9]);
+            $section->addTextBreak(1);
 
-        // Alokasi Lebar Kolom Presisi (Total ~10300 twips pas margin A4 Portrait)
-        $baseWidths = [
-            'no'             => 600,
-            'nama_pekerjaan' => 2000,
-            'nama_pekerja'   => 1500,
-            'nama_barang'    => 1800,
-            'foto'           => 1800,
-            'kuantitas'      => 800,
-            'keterangan'     => 1800,
-        ];
+            // Alokasi Lebar Kolom Presisi (Total ~10300 twips pas margin A4 Portrait)
+            $baseWidths = [
+                'no'             => 600,
+                'nama_pekerjaan' => 2000,
+                'nama_pekerja'   => 1500,
+                'nama_barang'    => 1800,
+                'foto'           => 1800,
+                'kuantitas'      => 800,
+                'keterangan'     => 1800,
+            ];
 
-        // Hitung ulang jika ada kolom yang di-uncheck
-        $colWidths = [];
-        $extraWidth = 0;
-        if (!$includeEvent) {
-            $extraWidth += $baseWidths['nama_pekerjaan'];
-        }
-        if (!$includePekerja) {
-            $extraWidth += $baseWidths['nama_pekerja'];
-        }
+            // Hitung ulang jika ada kolom yang di-uncheck
+            $colWidths = [];
+            $extraWidth = 0;
+            if (!$includeEvent) {
+                $extraWidth += $baseWidths['nama_pekerjaan'];
+            }
+            if (!$includePekerja) {
+                $extraWidth += $baseWidths['nama_pekerja'];
+            }
 
-        foreach ($columnKeys as $key) {
-            $colWidths[$key] = $baseWidths[$key];
-        }
-
-        if ($extraWidth > 0) {
-            $colWidths['nama_barang'] += (int)round($extraWidth * 0.5);
-            $colWidths['keterangan']  += (int)round($extraWidth * 0.5);
-        }
-
-        // Define Table Style
-        $tableStyle = [
-            'borderColor' => '000000',
-            'borderSize'  => 6,
-            'cellMargin'  => 80,
-            'cantSplit'   => true,
-        ];
-        $headerCellStyle = ['bgColor' => '4F46E5', 'valign' => 'center'];
-        $headerTextStyle = ['bold' => true, 'color' => 'FFFFFF', 'size' => 9];
-
-        $phpWord->addTableStyle('RekapanTable', $tableStyle);
-        $table = $section->addTable('RekapanTable');
-
-        // Table Header
-        $table->addRow(400, ['tblHeader' => true]);
-        foreach ($columnKeys as $idx => $key) {
-            $w = $colWidths[$key];
-            $text = $headers[$idx];
-            $align = in_array($key, ['no', 'kuantitas', 'foto'], true) ? Jc::CENTER : Jc::LEFT;
-            $table->addCell($w, $headerCellStyle)->addText($text, $headerTextStyle, ['alignment' => $align]);
-        }
-
-        // Table Rows
-        $no = 1;
-        foreach ($data as $item) {
-            $table->addRow();
             foreach ($columnKeys as $key) {
+                $colWidths[$key] = $baseWidths[$key];
+            }
+
+            if ($extraWidth > 0) {
+                $colWidths['nama_barang'] += (int)round($extraWidth * 0.5);
+                $colWidths['keterangan']  += (int)round($extraWidth * 0.5);
+            }
+
+            // Define Table Style
+            $tableStyle = [
+                'borderColor' => '000000',
+                'borderSize'  => 6,
+                'cellMargin'  => 80,
+                'cantSplit'   => true,
+            ];
+            $headerCellStyle = ['bgColor' => '4F46E5', 'valign' => 'center'];
+            $headerTextStyle = ['bold' => true, 'color' => 'FFFFFF', 'size' => 9];
+
+            $phpWord->addTableStyle('RekapanTable', $tableStyle);
+            $table = $section->addTable('RekapanTable');
+
+            // Table Header
+            $table->addRow(400, ['tblHeader' => true]);
+            foreach ($columnKeys as $idx => $key) {
                 $w = $colWidths[$key];
+                $text = $headers[$idx];
+                $align = in_array($key, ['no', 'kuantitas', 'foto'], true) ? Jc::CENTER : Jc::LEFT;
+                $table->addCell($w, $headerCellStyle)->addText($text, $headerTextStyle, ['alignment' => $align]);
+            }
 
-                if ($key === 'no') {
-                    $table->addCell($w)->addText($no, [], ['alignment' => Jc::CENTER]);
-                } elseif ($key === 'nama_pekerjaan') {
-                    $table->addCell($w)->addText($item['nama_pekerjaan']);
-                } elseif ($key === 'nama_pekerja') {
-                    $table->addCell($w)->addText($item['nama_pekerja']);
-                } elseif ($key === 'nama_barang') {
-                    $table->addCell($w)->addText(!empty($item['nama_barang']) ? $item['nama_barang'] : '-');
-                } elseif ($key === 'kuantitas') {
-                    $table->addCell($w)->addText($item['kuantitas'], [], ['alignment' => Jc::CENTER]);
-                } elseif ($key === 'keterangan') {
-                    $table->addCell($w)->addText($item['keterangan']);
-                } elseif ($key === 'foto') {
-                    // Embed Foto secara Vertikal dalam 1 Sel Kolom Foto
-                    $cellFoto = $table->addCell($w);
-                    $hasFoto = false;
+            // Table Rows
+            $no = 1;
+            foreach ($data as $item) {
+                $table->addRow();
+                foreach ($columnKeys as $key) {
+                    $w = $colWidths[$key];
 
-                    if (!empty($item['foto_list'])) {
-                        foreach ($item['foto_list'] as $relPath) {
-                            $absPath = realpath($publicDir . $relPath);
-                            if ($absPath && file_exists($absPath)) {
-                                $cellFoto->addImage($absPath, [
-                                    'width'        => $maxPhotoSize,
-                                    'height'       => $maxPhotoSize,
-                                    'alignment'    => Jc::CENTER,
-                                    'marginTop'    => 2,
-                                    'marginBottom' => 4,
-                                ]);
-                                $hasFoto = true;
+                    if ($key === 'no') {
+                        $table->addCell($w)->addText((string)$no, [], ['alignment' => Jc::CENTER]);
+                    } elseif ($key === 'nama_pekerjaan') {
+                        $table->addCell($w)->addText((string)($item['nama_pekerjaan'] ?? ''));
+                    } elseif ($key === 'nama_pekerja') {
+                        $table->addCell($w)->addText((string)($item['nama_pekerja'] ?? ''));
+                    } elseif ($key === 'nama_barang') {
+                        $table->addCell($w)->addText(!empty($item['nama_barang']) ? (string)$item['nama_barang'] : '-');
+                    } elseif ($key === 'kuantitas') {
+                        $table->addCell($w)->addText((string)($item['kuantitas'] ?? '0'), [], ['alignment' => Jc::CENTER]);
+                    } elseif ($key === 'keterangan') {
+                        $table->addCell($w)->addText((string)($item['keterangan'] ?? ''));
+                    } elseif ($key === 'foto') {
+                        // Embed Foto secara Vertikal dalam 1 Sel Kolom Foto
+                        $cellFoto = $table->addCell($w);
+                        $hasFoto = false;
+
+                        if (!empty($item['foto_list'])) {
+                            foreach ($item['foto_list'] as $relPath) {
+                                $cleanRelPath = '/' . ltrim($relPath, '/\\');
+                                $absPath = realpath($publicDir . $cleanRelPath) ?: ($publicDir . $cleanRelPath);
+                                if ($absPath && file_exists($absPath)) {
+                                    $imgData = @getimagesize($absPath);
+                                    if (is_array($imgData) && !empty($imgData[2]) && in_array($imgData[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_BMP], true)) {
+                                        try {
+                                            $cellFoto->addImage($absPath, [
+                                                'width'        => $maxPhotoSize,
+                                                'height'       => $maxPhotoSize,
+                                                'alignment'    => Jc::CENTER,
+                                                'marginTop'    => 2,
+                                                'marginBottom' => 4,
+                                            ]);
+                                            $hasFoto = true;
+                                        } catch (\Throwable $imgEx) {
+                                            error_log("Gagal menyisipkan foto ke Word: " . $imgEx->getMessage());
+                                        }
+                                    }
+                                }
                             }
                         }
-                    }
 
-                    if (!$hasFoto) {
-                        $cellFoto->addText('-', [], ['alignment' => Jc::CENTER]);
+                        if (!$hasFoto) {
+                            $cellFoto->addText('-', [], ['alignment' => Jc::CENTER]);
+                        }
                     }
                 }
+                $no++;
             }
-            $no++;
+
+            $filename = "Rekapan_Barang_Event_" . date('Ymd_His') . ".docx";
+            
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+
+            header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+
+            $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
+            $objWriter->save('php://output');
+            exit;
         }
-
-        $filename = "Rekapan_Barang_Event_" . date('Ymd_His') . ".docx";
-        header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-
-        $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
-        $objWriter->save('php://output');
-        exit;
+    } catch (\Throwable $e) {
+        error_log("Export Error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+        $exportError = "Gagal melakukan export " . strtoupper($type) . ": " . $e->getMessage();
     }
 }
 
@@ -385,7 +421,19 @@ $jobs = $stmtJobs->fetchAll();
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+        <?php if ($exportError): ?>
+            <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-start space-x-3 shadow-lg">
+                <svg class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                    <strong class="font-semibold block text-white mb-0.5">Gagal Memproses Export</strong>
+                    <span><?= e($exportError) ?></span>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
             <div>
