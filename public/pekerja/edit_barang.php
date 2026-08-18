@@ -232,9 +232,9 @@ $successMsg = $_GET['success'] ?? null;
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end space-x-4 pt-4 border-t border-slate-800">
-                    <a href="/pekerja/index.php" class="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm font-semibold transition-all">Kembali</a>
-                    <button id="btnSubmit" type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all">
+                <div class="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                    <a href="/pekerja/index.php" class="w-full sm:w-auto text-center px-5 py-3 sm:py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm font-semibold transition-all">Kembali</a>
+                    <button id="btnSubmit" type="submit" class="w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all">
                         Simpan Perubahan
                     </button>
                 </div>

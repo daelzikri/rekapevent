@@ -61,20 +61,21 @@ foreach ($barangList as &$b) {
     <!-- Header / Navbar -->
     <nav class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+            <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center border border-blue-500/30 shrink-0">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                 </div>
-                <div>
+                <div class="truncate">
                     <span class="font-bold text-white tracking-tight">Sistem Rekapan Barang</span>
-                    <span class="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">Dashboard Admin (Read-Only)</span>
+                    <span class="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium hidden sm:inline-block">Dashboard Admin (Read-Only)</span>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-4">
+            <!-- Desktop Header Right -->
+            <div class="hidden md:flex items-center space-x-4">
                 <?php if ($user['role'] === 'superadmin'): ?>
                     <a href="/superadmin/kelola_pekerjaan.php" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold underline">Mode Superadmin</a>
                 <?php endif; ?>
@@ -83,13 +84,34 @@ foreach ($barangList as &$b) {
                     Logout
                 </a>
             </div>
+
+            <!-- Mobile Hamburger Button -->
+            <div class="md:hidden flex items-center space-x-2">
+                <button type="button" id="mobile-menu-btn" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" aria-label="Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 pt-3 pb-4 space-y-3 shadow-2xl">
+            <div class="px-3 py-1 text-xs text-slate-400 flex items-center justify-between">
+                <span>User: <strong class="text-white"><?= e($user['username']) ?></strong></span>
+                <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold text-[10px]"><?= strtoupper($user['role']) ?></span>
+            </div>
+            <?php if ($user['role'] === 'superadmin'): ?>
+                <a href="/superadmin/kelola_pekerjaan.php" class="block px-3 py-2 rounded-xl text-sm font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 transition-all">Panel Superadmin</a>
+            <?php endif; ?>
+            <a href="/auth/logout.php" class="block w-full text-center px-3 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">Logout</a>
         </div>
     </nav>
 
     <!-- Main Body -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-white">Monitoring Data Rekapan Event</h1>
                 <p class="text-slate-400 text-sm mt-1">Lihat seluruh data barang yang diinput oleh tim pekerja (Mode Pemantauan / Read-Only).</p>
@@ -97,7 +119,7 @@ foreach ($barangList as &$b) {
         </div>
 
         <!-- Filter & Search Bar -->
-        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl mb-8 shadow-xl">
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl">
             <form method="GET" action="" class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                 <div>
@@ -118,8 +140,8 @@ foreach ($barangList as &$b) {
                         class="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <div class="flex items-end space-x-2">
-                    <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all">
+                <div class="flex items-stretch md:items-end space-x-2">
+                    <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shadow-lg shadow-blue-600/30">
                         Terapkan Filter
                     </button>
                     <?php if ($filterPekerjaanId > 0 || !empty($search)): ?>
@@ -131,7 +153,7 @@ foreach ($barangList as &$b) {
             </form>
         </div>
 
-        <!-- Tabel Data Barang -->
+        <!-- Tabel / Cards Data Barang -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
                 <h3 class="font-bold text-white">Daftar Barang Event (<?= count($barangList) ?> record)</h3>
@@ -143,7 +165,8 @@ foreach ($barangList as &$b) {
                     Tidak ditemukan data barang yang sesuai dengan filter.
                 </div>
             <?php else: ?>
-                <div class="overflow-x-auto">
+                <!-- Desktop Table View -->
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-950/60 text-xs uppercase text-slate-400 border-b border-slate-800">
                             <tr>
@@ -195,10 +218,63 @@ foreach ($barangList as &$b) {
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Mobile Card View -->
+                <div class="md:hidden divide-y divide-slate-800/80">
+                    <?php foreach ($barangList as $item): ?>
+                        <div class="p-4 space-y-3 hover:bg-slate-800/20 transition-colors">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <span class="text-xs text-indigo-400 font-semibold uppercase block"><?= e($item['nama_pekerjaan']) ?></span>
+                                    <h4 class="font-bold text-white text-base mt-0.5"><?= e(!empty($item['nama_barang']) ? $item['nama_barang'] : '-') ?></h4>
+                                    <p class="text-xs text-slate-400">PJ Input: <?= e($item['nama_pekerja']) ?></p>
+                                </div>
+                                <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
+                                    <?= e($item['kuantitas']) ?>
+                                </span>
+                            </div>
+
+                            <div class="text-xs text-slate-300 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                                <?= e($item['keterangan']) ?>
+                            </div>
+
+                            <?php if (!empty($item['foto'])): ?>
+                                <div class="space-y-1">
+                                    <span class="text-[11px] text-slate-400 font-medium">Foto Terlampir:</span>
+                                    <div class="flex items-center space-x-2">
+                                        <?php foreach (array_slice($item['foto'], 0, 4) as $f): ?>
+                                            <a href="<?= e($f['file_path']) ?>" target="_blank" class="block w-12 h-12 rounded-lg overflow-hidden border border-slate-700">
+                                                <img src="<?= e($f['file_path']) ?>" class="w-full h-full object-cover">
+                                            </a>
+                                        <?php endforeach; ?>
+                                        <?php if (count($item['foto']) > 4): ?>
+                                            <span class="text-xs text-slate-400 font-semibold bg-slate-800 px-2 py-1.5 rounded-lg border border-slate-700">
+                                                +<?= count($item['foto']) - 4 ?> foto
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <div class="text-[11px] text-slate-500 text-right pt-1">
+                                Input: <?= date('d/m/Y H:i', strtotime($item['created_at'])) ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             <?php endif; ?>
         </div>
 
     </main>
 
+    <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+    </script>
 </body>
 </html>

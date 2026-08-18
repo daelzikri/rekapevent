@@ -108,26 +108,44 @@ $userList = $stmtUsers->fetchAll();
     <!-- Header / Navbar Superadmin -->
     <nav class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+            <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shrink-0">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
                 </div>
-                <div>
+                <div class="truncate">
                     <span class="font-bold text-white tracking-tight">Superadmin Panel</span>
-                    <span class="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium">Kelola Akun</span>
+                    <span class="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium hidden sm:inline-block">Kelola Akun</span>
                 </div>
             </div>
 
-            <!-- Navigation Links -->
-            <div class="flex items-center space-x-6">
+            <!-- Desktop Navigation Links -->
+            <div class="hidden md:flex items-center space-x-6">
                 <a href="/superadmin/kelola_pekerjaan.php" class="text-sm text-slate-400 hover:text-white transition-all">Kelola Pekerjaan</a>
                 <a href="/superadmin/kelola_akun.php" class="text-sm font-bold text-purple-400">Kelola Akun</a>
                 <a href="/superadmin/export.php" class="text-sm text-slate-400 hover:text-white transition-all">Export Excel/Word</a>
                 <a href="/admin/dashboard.php" class="text-sm text-slate-400 hover:text-white transition-all">Dashboard View</a>
                 <a href="/auth/logout.php" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">Logout</a>
             </div>
+
+            <!-- Mobile Hamburger Button -->
+            <div class="md:hidden flex items-center">
+                <button type="button" id="mobile-menu-btn" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all" aria-label="Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 pt-3 pb-4 space-y-2 shadow-2xl">
+            <a href="/superadmin/kelola_pekerjaan.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Kelola Pekerjaan</a>
+            <a href="/superadmin/kelola_akun.php" class="block px-3 py-2.5 rounded-xl text-sm font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 transition-all">Kelola Akun</a>
+            <a href="/superadmin/export.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Export Excel/Word</a>
+            <a href="/admin/dashboard.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Dashboard View</a>
+            <a href="/auth/logout.php" class="block w-full text-center mt-3 px-3 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">Logout</a>
         </div>
     </nav>
 
@@ -136,7 +154,7 @@ $userList = $stmtUsers->fetchAll();
 
         <?php if ($successMsg): ?>
             <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center space-x-3">
-                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
                 <span><?= e($successMsg) ?></span>
@@ -155,7 +173,7 @@ $userList = $stmtUsers->fetchAll();
         <!-- Form Buat Akun Baru -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-6">
             <h3 class="text-lg font-bold text-white mb-4">Buat Akun Pengguna Baru (Admin / Pekerja)</h3>
-            <form method="POST" action="" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <form method="POST" action="" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-stretch md:items-end">
                 <?= get_csrf_input() ?>
                 <input type="hidden" name="action" value="create_user">
 
@@ -187,13 +205,14 @@ $userList = $stmtUsers->fetchAll();
             </form>
         </div>
 
-        <!-- Tabel Daftar Akun -->
+        <!-- Tabel / Cards Daftar Akun -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
                 <h3 class="font-bold text-white">Daftar Akun Pengguna System (<?= count($userList) ?>)</h3>
             </div>
 
-            <div class="overflow-x-auto">
+            <!-- Desktop View: Table -->
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-left text-sm text-slate-300">
                     <thead class="bg-slate-950/60 text-xs uppercase text-slate-400 border-b border-slate-800">
                         <tr>
@@ -281,6 +300,85 @@ $userList = $stmtUsers->fetchAll();
                     </tbody>
                 </table>
             </div>
+
+            <!-- Mobile View: Cards -->
+            <div class="md:hidden divide-y divide-slate-800/80">
+                <?php foreach ($userList as $u): ?>
+                    <div class="p-4 space-y-3 hover:bg-slate-800/20 transition-colors">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold text-white text-base">
+                                    <?= e($u['username']) ?>
+                                    <?php if ($u['id'] === $user['id']): ?>
+                                        <span class="ml-1 text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/30">Anda</span>
+                                    <?php endif; ?>
+                                </h4>
+                                <p class="text-xs text-slate-400 mt-0.5">
+                                    Job Terikat: <?= $u['pekerjaan_terikat'] ? e($u['pekerjaan_terikat']) : '<span class="text-slate-600">Tidak Ada</span>' ?>
+                                </p>
+                            </div>
+                            <div>
+                                <?php if ($u['role'] === 'superadmin'): ?>
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30 font-semibold">Superadmin</span>
+                                <?php elseif ($u['role'] === 'admin'): ?>
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 font-semibold">Admin</span>
+                                <?php else: ?>
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 font-semibold">Pekerja</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span class="text-slate-400">Status:</span>
+                            <?php 
+                            $isLocked = (!empty($u['locked_until']) && strtotime($u['locked_until']) > time());
+                            $isActive = (!empty($u['session_token']) && !empty($u['last_activity_at']) && (time() - strtotime($u['last_activity_at'])) <= 1800);
+                            ?>
+                            <?php if ($isLocked): ?>
+                                <span class="text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">Terkunci (5x Gagal)</span>
+                            <?php elseif ($isActive): ?>
+                                <span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Sesi Aktif</span>
+                            <?php else: ?>
+                                <span class="text-slate-500">Offline</span>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-800/60">
+                            <?php if ($isLocked): ?>
+                                <form method="POST" action="" class="inline">
+                                    <?= get_csrf_input() ?>
+                                    <input type="hidden" name="action" value="unlock_account">
+                                    <input type="hidden" name="target_user_id" value="<?= $u['id'] ?>">
+                                    <button type="submit" class="px-2.5 py-1 text-xs rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 font-semibold border border-amber-500/30">Unlock</button>
+                                </form>
+                            <?php endif; ?>
+
+                            <?php if ($isActive): ?>
+                                <form method="POST" action="" class="inline" onsubmit="return confirm('Keluarkan sesi aktif akun <?= e($u['username']) ?>?');">
+                                    <?= get_csrf_input() ?>
+                                    <input type="hidden" name="action" value="reset_session">
+                                    <input type="hidden" name="target_user_id" value="<?= $u['id'] ?>">
+                                    <button type="submit" class="px-2.5 py-1 text-xs rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 font-semibold border border-purple-500/30">Reset Sesi</button>
+                                </form>
+                            <?php endif; ?>
+
+                            <button type="button" onclick="promptResetPassword(<?= $u['id'] ?>, '<?= e($u['username']) ?>')"
+                                class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 text-slate-300 hover:text-white font-semibold border border-slate-700">
+                                Reset Pass
+                            </button>
+
+                            <?php if ($u['role'] !== 'superadmin' && $u['id'] !== $user['id']): ?>
+                                <form method="POST" action="" class="inline" onsubmit="return confirm('Hapus akun <?= e($u['username']) ?>?');">
+                                    <?= get_csrf_input() ?>
+                                    <input type="hidden" name="action" value="delete_user">
+                                    <input type="hidden" name="target_user_id" value="<?= $u['id'] ?>">
+                                    <button type="submit" class="px-2.5 py-1 text-xs rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 font-semibold border border-rose-500/20">Hapus</button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
 
     </main>
@@ -294,6 +392,14 @@ $userList = $stmtUsers->fetchAll();
     </form>
 
     <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
         function promptResetPassword(userId, username) {
             const pass = prompt(`Masukkan password baru untuk akun '${username}':`);
             if (pass && pass.trim().length > 0) {

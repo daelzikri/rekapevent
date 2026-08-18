@@ -105,25 +105,44 @@ $jobsList = $stmtJobs->fetchAll();
     <!-- Header / Navbar Superadmin -->
     <nav class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+            <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shrink-0">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
                 </div>
-                <div>
+                <div class="truncate">
                     <span class="font-bold text-white tracking-tight">Superadmin Panel</span>
-                    <span class="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium">Kelola Pekerjaan</span>
+                    <span class="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium hidden sm:inline-block">Kelola Pekerjaan</span>
                 </div>
             </div>
 
-            <div class="flex items-center space-x-6">
+            <!-- Desktop Links -->
+            <div class="hidden md:flex items-center space-x-6">
                 <a href="/superadmin/kelola_pekerjaan.php" class="text-sm font-bold text-purple-400">Kelola Pekerjaan</a>
                 <a href="/superadmin/kelola_akun.php" class="text-sm text-slate-400 hover:text-white transition-all">Kelola Akun</a>
                 <a href="/superadmin/export.php" class="text-sm text-slate-400 hover:text-white transition-all">Export Excel/Word</a>
                 <a href="/admin/dashboard.php" class="text-sm text-slate-400 hover:text-white transition-all">Dashboard View</a>
                 <a href="/auth/logout.php" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">Logout</a>
             </div>
+
+            <!-- Mobile Hamburger Button -->
+            <div class="md:hidden flex items-center">
+                <button type="button" id="mobile-menu-btn" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all" aria-label="Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 pt-3 pb-4 space-y-2 shadow-2xl">
+            <a href="/superadmin/kelola_pekerjaan.php" class="block px-3 py-2.5 rounded-xl text-sm font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 transition-all">Kelola Pekerjaan</a>
+            <a href="/superadmin/kelola_akun.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Kelola Akun</a>
+            <a href="/superadmin/export.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Export Excel/Word</a>
+            <a href="/admin/dashboard.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Dashboard View</a>
+            <a href="/auth/logout.php" class="block w-full text-center mt-3 px-3 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">Logout</a>
         </div>
     </nav>
 
@@ -132,7 +151,7 @@ $jobsList = $stmtJobs->fetchAll();
 
         <?php if ($successMsg): ?>
             <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center space-x-3">
-                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
                 <span><?= e($successMsg) ?></span>
@@ -151,7 +170,7 @@ $jobsList = $stmtJobs->fetchAll();
         <!-- Form Tambah Pekerjaan Baru -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-6">
             <h3 class="text-lg font-bold text-white mb-4">Buat Pekerjaan Event Baru & Assign Akun Pekerja</h3>
-            <form method="POST" action="" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <form method="POST" action="" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch md:items-end">
                 <?= get_csrf_input() ?>
                 <input type="hidden" name="action" value="create_job">
 
@@ -179,13 +198,14 @@ $jobsList = $stmtJobs->fetchAll();
             </form>
         </div>
 
-        <!-- Tabel Daftar Pekerjaan -->
+        <!-- Tabel / Cards Daftar Pekerjaan -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
                 <h3 class="font-bold text-white">Daftar Pekerjaan Event Active (<?= count($jobsList) ?>)</h3>
             </div>
 
-            <div class="overflow-x-auto">
+            <!-- Desktop View: Table -->
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-left text-sm text-slate-300">
                     <thead class="bg-slate-950/60 text-xs uppercase text-slate-400 border-b border-slate-800">
                         <tr>
@@ -236,6 +256,47 @@ $jobsList = $stmtJobs->fetchAll();
                     </tbody>
                 </table>
             </div>
+
+            <!-- Mobile View: Cards -->
+            <div class="md:hidden divide-y divide-slate-800/80">
+                <?php foreach ($jobsList as $job): ?>
+                    <div class="p-4 space-y-3 hover:bg-slate-800/20 transition-colors">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold text-white text-base"><?= e($job['nama_pekerjaan']) ?></h4>
+                                <p class="text-xs text-slate-500 mt-0.5">ID: #<?= $job['id'] ?> • <?= date('d M Y H:i', strtotime($job['created_at'])) ?></p>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30 font-bold shrink-0">
+                                <?= $job['total_barang'] ?> Barang
+                            </span>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <span class="text-slate-400">PJ:</span>
+                            <span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 font-semibold">
+                                <?= e($job['nama_pekerja']) ?>
+                            </span>
+                            <span class="text-slate-500">• Pembuat: <?= e($job['nama_pembuat']) ?></span>
+                        </div>
+
+                        <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800/60">
+                            <button type="button" onclick="promptEditJob(<?= $job['id'] ?>, '<?= e(addslashes($job['nama_pekerjaan'])) ?>', <?= $job['user_id'] ?>)"
+                                class="px-3 py-1.5 text-xs rounded-lg bg-slate-800 text-slate-300 hover:text-white font-semibold border border-slate-700">
+                                Edit Pekerjaan
+                            </button>
+
+                            <form method="POST" action="" class="inline" onsubmit="return confirm('Hapus pekerjaan <?= e(addslashes($job['nama_pekerjaan'])) ?> beserta seluruh barangnya?');">
+                                <?= get_csrf_input() ?>
+                                <input type="hidden" name="action" value="delete_job">
+                                <input type="hidden" name="job_id" value="<?= $job['id'] ?>">
+                                <button type="submit" class="px-3 py-1.5 text-xs rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 font-semibold border border-rose-500/20">
+                                    Hapus
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
 
     </main>
@@ -250,6 +311,14 @@ $jobsList = $stmtJobs->fetchAll();
     </form>
 
     <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
         function promptEditJob(jobId, namaCurrent, userIdCurrent) {
             const newNama = prompt("Ubah Nama Pekerjaan:", namaCurrent);
             if (newNama && newNama.trim().length > 0) {

@@ -75,23 +75,43 @@ $errorMsg = $_GET['error'] ?? null;
     <!-- Header / Navbar -->
     <nav class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+            <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shrink-0">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                     </svg>
                 </div>
-                <div>
+                <div class="truncate">
                     <span class="font-bold text-white tracking-tight">Sistem Rekapan Barang</span>
-                    <span class="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">Pekerja Panel</span>
+                    <span class="ml-2 text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium hidden sm:inline-block">Pekerja Panel</span>
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
+
+            <!-- Desktop Header Right -->
+            <div class="hidden md:flex items-center space-x-4">
                 <span class="text-sm text-slate-400">Halo, <strong class="text-white"><?= e($user['username']) ?></strong></span>
                 <a href="/auth/logout.php" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">
                     Logout
                 </a>
             </div>
+
+            <!-- Mobile Hamburger Button -->
+            <div class="md:hidden flex items-center space-x-2">
+                <button type="button" id="mobile-menu-btn" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" aria-label="Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 pt-3 pb-4 space-y-3 shadow-2xl">
+            <div class="px-3 py-1 text-xs text-slate-400 flex items-center justify-between">
+                <span>User: <strong class="text-white"><?= e($user['username']) ?></strong></span>
+                <span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold text-[10px]">PEKERJA</span>
+            </div>
+            <a href="/auth/logout.php" class="block w-full text-center px-3 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">Logout</a>
         </div>
     </nav>
 
@@ -126,14 +146,14 @@ $errorMsg = $_GET['error'] ?? null;
             </div>
         <?php else: ?>
             <!-- Header Pekerjaan Saya -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
                 <div>
                     <span class="text-xs uppercase font-semibold text-indigo-400 tracking-wider">Pekerjaan Terhubung</span>
                     <h1 class="text-2xl font-extrabold text-white mt-1"><?= e($pekerjaan['nama_pekerjaan']) ?></h1>
                     <p class="text-xs text-slate-400 mt-1">ID Pekerjaan: #<?= $pekerjaan['id'] ?> • Total Barang: <strong class="text-indigo-400"><?= count($barangList) ?> item</strong></p>
                 </div>
                 <div>
-                    <a href="/pekerja/tambah_barang.php" class="inline-flex items-center space-x-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all">
+                    <a href="/pekerja/tambah_barang.php" class="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -165,11 +185,11 @@ $errorMsg = $_GET['error'] ?? null;
                 </form>
             </div>
 
-            <!-- Tabel List Barang (Bentuk List untuk Efisiensi Ratusan Barang) -->
+            <!-- Tabel List Barang -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                 <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
                     <h3 class="font-bold text-white text-base">Daftar Barang Event (<?= count($barangList) ?> record)</h3>
-                    <span class="text-xs text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20 font-medium">Tampilan List Ringkas</span>
+                    <span class="text-xs text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20 font-medium">Data Terurut</span>
                 </div>
 
                 <?php if (empty($barangList)): ?>
@@ -180,7 +200,8 @@ $errorMsg = $_GET['error'] ?? null;
                         <p>Tidak ada barang yang ditemukan.</p>
                     </div>
                 <?php else: ?>
-                    <div class="overflow-x-auto">
+                    <!-- Desktop Table View -->
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="w-full text-left text-sm text-slate-300">
                             <thead class="bg-slate-950/80 text-xs uppercase text-slate-400 border-b border-slate-800">
                                 <tr>
@@ -264,11 +285,69 @@ $errorMsg = $_GET['error'] ?? null;
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Mobile Card View -->
+                    <div class="md:hidden divide-y divide-slate-800/80">
+                        <?php $no = 1; foreach ($barangList as $item): ?>
+                            <div class="p-4 space-y-3 hover:bg-slate-800/20 transition-colors">
+                                <div class="flex items-start justify-between">
+                                    <div class="pr-2">
+                                        <div class="text-[11px] font-semibold text-slate-500">Item #<?= $no++ ?> • <?= date('d/m/Y H:i', strtotime($item['created_at'])) ?></div>
+                                        <h4 class="font-bold text-white text-base mt-0.5"><?= e(!empty($item['nama_barang']) ? $item['nama_barang'] : '-') ?></h4>
+                                    </div>
+                                    <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+                                        <?= e($item['kuantitas']) ?>
+                                    </span>
+                                </div>
+
+                                <div class="text-xs text-slate-300 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+                                    <?= e($item['keterangan']) ?>
+                                </div>
+
+                                <?php if (!empty($item['foto'])): ?>
+                                    <div class="space-y-1">
+                                        <span class="text-[11px] text-slate-400 font-medium">Foto Terlampir:</span>
+                                        <div class="flex items-center space-x-2 overflow-x-auto pb-1">
+                                            <?php foreach ($item['foto'] as $f): ?>
+                                                <a href="<?= e($f['file_path']) ?>" target="_blank" class="block w-14 h-14 rounded-lg overflow-hidden border border-slate-700 shrink-0">
+                                                    <img src="<?= e($f['file_path']) ?>" class="w-full h-full object-cover">
+                                                </a>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800/60">
+                                    <a href="/pekerja/edit_barang.php?id=<?= $item['id'] ?>" 
+                                       class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 border border-indigo-500/30 transition-all">
+                                        Edit Barang
+                                    </a>
+                                    <form method="POST" action="" class="inline" onsubmit="return confirm('Hapus barang ini?');">
+                                        <?= get_csrf_input() ?>
+                                        <input type="hidden" name="action" value="delete_barang">
+                                        <input type="hidden" name="barang_id" value="<?= $item['id'] ?>">
+                                        <button type="submit" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
     </main>
 
+    <script>
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+    </script>
 </body>
 </html>
 
