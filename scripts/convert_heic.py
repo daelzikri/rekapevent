@@ -4,7 +4,7 @@ import os
 from PIL import Image
 import pillow_heif
 
-def convert_heic_to_jpeg(input_path: str, output_path: str) -> bool:
+def convert_heic(input_path: str, output_path: str) -> bool:
     try:
         # Register HEIF opener to Pillow
         pillow_heif.register_heif_opener()
@@ -16,15 +16,19 @@ def convert_heic_to_jpeg(input_path: str, output_path: str) -> bool:
         # Open image
         image = Image.open(input_path)
         
-        # Convert mode to RGB if RGBA or P to avoid JPEG conversion errors
-        if image.mode in ("RGBA", "P"):
-            image = image.convert("RGB")
-            
         # Ensure output directory exists
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        # Save as JPEG
-        image.save(output_path, format="JPEG", quality=85, optimize=True)
+        # Save as WEBP or JPEG
+        if output_path.lower().endswith('.webp'):
+            if image.mode not in ("RGB", "RGBA"):
+                image = image.convert("RGBA" if "A" in image.mode else "RGB")
+            image.save(output_path, format="WEBP", quality=85)
+        else:
+            if image.mode in ("RGBA", "P"):
+                image = image.convert("RGB")
+            image.save(output_path, format="JPEG", quality=85, optimize=True)
+
         print(f"Sukses mengonversi '{input_path}' ke '{output_path}'")
         return True
     except Exception as e:
@@ -39,7 +43,7 @@ if __name__ == "__main__":
     in_file = sys.argv[1]
     out_file = sys.argv[2]
     
-    success = convert_heic_to_jpeg(in_file, out_file)
+    success = convert_heic(in_file, out_file)
     if success:
         sys.exit(0)
     else:

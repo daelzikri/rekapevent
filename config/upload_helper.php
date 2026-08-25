@@ -15,10 +15,68 @@ function generate_uuid(): string {
 }
 
 /**
- * Konversi HEIC ke JPEG di Server (Mencoba Imagick PHP terlebih dahulu, lalu Python CLI)
+ * Konversi HEIC ke WebP di Server (Mencoba Imagick PHP, Python CLI, lalu GD Fallback)
+ */
+function convert_heic_to_webp_server(string $inputPath, string $outputPath): bool {
+    // 1. Coba via Imagick PHP Extension
+    if (extension_loaded('imagick') || class_exists('Imagick')) {
+        try {
+            $imagick = new Imagick();
+            $imagick->readImage($inputPath);
+            $imagick->setImageFormat('webp');
+            $imagick->setImageCompressionQuality(85);
+            $imagick->writeImage($outputPath);
+            $imagick->clear();
+            $imagick->destroy();
+            if (file_exists($outputPath)) {
+                return true;
+            }
+        } catch (Exception $e) {
+            error_log("Imagick HEIC to WebP conversion failed: " . $e->getMessage());
+        }
+    }
+
+    // 2. Coba via Python Script CLI
+    $scriptPath = realpath(__DIR__ . '/../scripts/convert_heic.py');
+    if ($scriptPath && file_exists($scriptPath)) {
+        foreach (['python3', 'python'] as $pyCmd) {
+            $cmd = "{$pyCmd} " . escapeshellarg($scriptPath) . " " . escapeshellarg($inputPath) . " " . escapeshellarg($outputPath) . " 2>&1";
+            $output = [];
+            $returnVar = 0;
+            @exec($cmd, $output, $returnVar);
+            if ($returnVar === 0 && file_exists($outputPath)) {
+                return true;
+            }
+        }
+    }
+
+    // 3. Fallback: Konversi HEIC ke JPEG temp terlebih dahulu via convert_heic_to_jpeg_server, lalu ubah ke WebP via GD
+    $tmpJpegPath = dirname($outputPath) . '/' . basename($outputPath, '.webp') . '_tmp.jpg';
+    if (convert_heic_to_jpeg_server($inputPath, $tmpJpegPath)) {
+        if (extension_loaded('gd') && function_exists('imagewebp')) {
+            $gdImg = @imagecreatefromjpeg($tmpJpegPath);
+            if ($gdImg !== false) {
+                $saved = imagewebp($gdImg, $outputPath, 85);
+                imagedestroy($gdImg);
+                @unlink($tmpJpegPath);
+                if ($saved && file_exists($outputPath)) {
+                    return true;
+                }
+            }
+        }
+        if (file_exists($tmpJpegPath)) {
+            @rename($tmpJpegPath, $outputPath);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Konversi HEIC ke JPEG di Server (Fungsi Kompatibilitas)
  */
 function convert_heic_to_jpeg_server(string $inputPath, string $outputPath): bool {
-    // 1. Coba via Imagick PHP Extension (Biasa tersedia di Hostinger/cPanel)
     if (extension_loaded('imagick') || class_exists('Imagick')) {
         try {
             $imagick = new Imagick();
@@ -34,7 +92,6 @@ function convert_heic_to_jpeg_server(string $inputPath, string $outputPath): boo
         }
     }
 
-    // 2. Coba via Python Script CLI jika Python terinstall di server
     $scriptPath = realpath(__DIR__ . '/../scripts/convert_heic.py');
     if ($scriptPath && file_exists($scriptPath)) {
         foreach (['python3', 'python'] as $pyCmd) {
@@ -205,27 +262,27 @@ function handle_photo_uploads(array $fileInput, int $pekerjaanId, int $barangId,
                 continue;
             }
 
-            // Format HEIC: simpan sementara -> panggil converter server (Imagick PHP / Python)
+            // Format HEIC: simpan sementara -> panggil converter server ke WebP
             $tmpHeicPath = "{$uploadDir}/{$uuid}_tmp.heic";
-            $finalJpegPath = "{$uploadDir}/{$uuid}.jpg";
+            $finalWebpPath = "{$uploadDir}/{$uuid}.webp";
 
             if (!move_uploaded_file($f['tmp_name'], $tmpHeicPath)) {
                 $errors[] = "Gagal memindahkan file upload {$f['name']}.";
                 continue;
             }
 
-            $converted = convert_heic_to_jpeg_server($tmpHeicPath, $finalJpegPath);
+            $converted = convert_heic_to_webp_server($tmpHeicPath, $finalWebpPath);
 
             if (file_exists($tmpHeicPath)) {
                 @unlink($tmpHeicPath);
             }
 
-            if (!$converted || !file_exists($finalJpegPath)) {
-                $errors[] = "Gagal mengonversi file HEIC {$f['name']} di server. Pastikan ekstensi PHP Imagick aktif atau gunakan opsi konversi di browser.";
+            if (!$converted || !file_exists($finalWebpPath)) {
+                $errors[] = "Gagal mengonversi file HEIC {$f['name']} di server.";
                 continue;
             }
 
-            $finalFileName = "{$uuid}.jpg";
+            $finalFileName = basename($finalWebpPath);
             $relativePath = "/uploads/{$pekerjaanId}/{$finalFileName}";
         } else {
             // Validasi Struktur Gambar menggunakan getimagesize()
@@ -242,51 +299,38 @@ function handle_photo_uploads(array $fileInput, int $pekerjaanId, int $barangId,
                 continue;
             }
 
-            // Pembersihan / Re-rendering Gambar via GD untuk Membuang EXIF / Payload Tersembunyi (jika ekstensi GD aktif)
-            $sanitized = false;
+            // SELALU KONVERSI SEMUA GAMBAR (JPG, JPEG, PNG, WEBP) MENJADI FORMAT WEBP
+            $gdImg = false;
             if (extension_loaded('gd')) {
                 if ($imageType === IMAGETYPE_JPEG) {
                     $gdImg = @imagecreatefromjpeg($f['tmp_name']);
-                    if ($gdImg !== false) {
-                        $targetExt = 'jpg';
-                        $finalFileName = "{$uuid}.{$targetExt}";
-                        $finalPath = "{$uploadDir}/{$finalFileName}";
-                        if (imagejpeg($gdImg, $finalPath, 85)) {
-                            $sanitized = true;
-                        }
-                        imagedestroy($gdImg);
-                    }
                 } elseif ($imageType === IMAGETYPE_PNG) {
                     $gdImg = @imagecreatefrompng($f['tmp_name']);
-                    if ($gdImg !== false) {
-                        $targetExt = 'png';
-                        $finalFileName = "{$uuid}.{$targetExt}";
-                        $finalPath = "{$uploadDir}/{$finalFileName}";
-                        imagealphablending($gdImg, false);
-                        imagesavealpha($gdImg, true);
-                        if (imagepng($gdImg, $finalPath, 6)) {
-                            $sanitized = true;
-                        }
-                        imagedestroy($gdImg);
-                    }
                 } elseif ($imageType === IMAGETYPE_WEBP && function_exists('imagecreatefromwebp')) {
                     $gdImg = @imagecreatefromwebp($f['tmp_name']);
-                    if ($gdImg !== false) {
-                        $targetExt = 'webp';
-                        $finalFileName = "{$uuid}.{$targetExt}";
-                        $finalPath = "{$uploadDir}/{$finalFileName}";
-                        if (imagewebp($gdImg, $finalPath, 85)) {
-                            $sanitized = true;
-                        }
-                        imagedestroy($gdImg);
-                    }
                 }
             }
 
-            if (!$sanitized) {
-                // Fallback jika GD tidak tersedia: simpan file dengan ekstensi yang DIPAKSA sesuai hasil getimagesize()
-                $targetExt = ($imageType === IMAGETYPE_PNG) ? 'png' : (($imageType === IMAGETYPE_WEBP) ? 'webp' : 'jpg');
-                $finalFileName = "{$uuid}.{$targetExt}";
+            $convertedToWebp = false;
+            if ($gdImg !== false && function_exists('imagewebp')) {
+                $finalFileName = "{$uuid}.webp";
+                $finalPath = "{$uploadDir}/{$finalFileName}";
+
+                // Pertahankan alpha channel transparan untuk PNG/WEBP
+                imagealphablending($gdImg, false);
+                imagesavealpha($gdImg, true);
+
+                if (imagewebp($gdImg, $finalPath, 85)) {
+                    $convertedToWebp = true;
+                }
+                imagedestroy($gdImg);
+            }
+
+            if (!$convertedToWebp) {
+                // Fallback jika GD / imagewebp tidak tersedia di server:
+                // Simpan file dengan ekstensi terverifikasi hasil getimagesize()
+                $fallbackExt = ($imageType === IMAGETYPE_PNG) ? 'png' : (($imageType === IMAGETYPE_WEBP) ? 'webp' : 'jpg');
+                $finalFileName = "{$uuid}.{$fallbackExt}";
                 $finalPath = "{$uploadDir}/{$finalFileName}";
 
                 if (!move_uploaded_file($f['tmp_name'], $finalPath)) {
