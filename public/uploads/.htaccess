@@ -10,11 +10,19 @@
 </IfModule>
 
 # Remove PHP Handlers
-RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps
-RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .inc .cgi .pl .py .asp .aspx .jsp .sh
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .inc .cgi .pl .py .asp .aspx .jsp .sh
+
+# Set Default Handler for static files
+<IfModule mod_mime.c>
+    SetHandler default-handler
+</IfModule>
+
+# Options
+Options -Indexes -ExecCGI
 
 # Deny Direct Execution of Script Files
-<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phps|pl|py|jsp|asp|sh|cgi)$">
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phps|phar|inc|pl|py|jsp|asp|aspx|sh|cgi|exe|bat|cmd|vbs|htaccess|htpasswd)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

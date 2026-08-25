@@ -52,6 +52,35 @@ function convert_heic_to_jpeg_server(string $inputPath, string $outputPath): boo
 }
 
 /**
+ * Memeriksa apakah nama file mengandung ekstensi atau karakter berbahaya (PHP, executable, null byte, double extension dll)
+ */
+function is_dangerous_filename(string $filename): bool {
+    if (str_contains($filename, "\0") || str_contains($filename, "%00")) {
+        return true;
+    }
+
+    $lower = strtolower($filename);
+
+    $dangerous = [
+        'php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'phps', 'phar',
+        'inc', 'cgi', 'pl', 'py', 'asp', 'aspx', 'jsp', 'sh', 'bash', 'exe',
+        'htaccess', 'htpasswd', 'cmd', 'bat', 'vbs'
+    ];
+
+    $parts = explode('.', $lower);
+    if (count($parts) > 1) {
+        for ($i = 1; $i < count($parts); $i++) {
+            $part = trim($parts[$i]);
+            if (in_array($part, $dangerous, true)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
  * Penanganan Upload Multi-Foto dengan Validasi Magic Bytes & HEIC Conversion
  */
 function handle_photo_uploads(array $fileInput, int $pekerjaanId, int $barangId, PDO $pdo): array {
@@ -123,28 +152,59 @@ function handle_photo_uploads(array $fileInput, int $pekerjaanId, int $barangId,
             continue;
         }
 
-        // 2. Validasi MIME Type via Magic Bytes (finfo_file)
+        // 2. Strict Check: Cegah tamper nama file (Burp Suite) dengan ekstensi skrip/berbahaya (.php, .phtml, .php.jpg, dll)
+        if (is_dangerous_filename($f['name'])) {
+            $errors[] = "File '{$f['name']}' disetolak karena mengandung ekstensi atau karakter yang tidak diizinkan.";
+            continue;
+        }
+
+        // 3. Validasi Ekstensi File Asli dengan Whitelist Ketat
+        $extOriginal = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+        if (!in_array($extOriginal, $allowedExtensions, true)) {
+            $errors[] = "File '{$f['name']}' memiliki ekstensi tidak diizinkan. Hanya format JPG, JPEG, PNG, WEBP, dan HEIC yang diperbolehkan.";
+            continue;
+        }
+
+        // 4. Validasi MIME Type via Magic Bytes (finfo_file)
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mimeType = finfo_file($finfo, $f['tmp_name']);
         finfo_close($finfo);
 
-        $extOriginal = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
-
         $allowedMimes = [
             'image/jpeg', 'image/jpg', 'image/pjpeg',
             'image/png', 'image/webp',
-            'image/heic', 'image/heif', 'image/x-heic', 'application/octet-stream'
+            'image/heic', 'image/heif', 'image/x-heic'
         ];
 
-        if (!in_array($mimeType, $allowedMimes, true) && !in_array($extOriginal, ['heic', 'heif', 'jpg', 'jpeg', 'png', 'webp'], true)) {
-            $errors[] = "File {$f['name']} memiliki format tidak diizinkan ({$mimeType}). Hanya HEIC, PNG, JPG, JPEG yang didukung.";
+        if (!in_array($mimeType, $allowedMimes, true)) {
+            $errors[] = "File '{$f['name']}' memiliki format isi file tidak diizinkan ({$mimeType}).";
             continue;
+        }
+
+        // 5. Validasi Isi File untuk Mencegah Polyglot WebShell / Payload Skrip PHP yang Di-embed di Gambar
+        $fileContents = @file_get_contents($f['tmp_name']);
+        if ($fileContents !== false) {
+            if (preg_match('/<\?(php|=|[\s\S]*?language\s*=\s*["\']?php)/i', $fileContents)) {
+                $errors[] = "File '{$f['name']}' terdeteksi mengandung kode skrip eksekusi dan ditolak demi keamanan.";
+                continue;
+            }
         }
 
         $uuid = generate_uuid();
         $isHeic = ($extOriginal === 'heic' || $extOriginal === 'heif' || str_contains($mimeType, 'heic') || str_contains($mimeType, 'heif'));
 
         if ($isHeic) {
+            // Validasi tambahan header HEIC
+            $handle = @fopen($f['tmp_name'], 'rb');
+            $headerBytes = $handle ? fread($handle, 32) : '';
+            if ($handle) fclose($handle);
+
+            if (!str_contains($headerBytes, 'ftyp') && !str_contains($mimeType, 'heic') && !str_contains($mimeType, 'heif')) {
+                $errors[] = "File '{$f['name']}' terdeteksi bukan file HEIC/HEIF yang sah.";
+                continue;
+            }
+
             // Format HEIC: simpan sementara -> panggil converter server (Imagick PHP / Python)
             $tmpHeicPath = "{$uploadDir}/{$uuid}_tmp.heic";
             $finalJpegPath = "{$uploadDir}/{$uuid}.jpg";
@@ -168,14 +228,71 @@ function handle_photo_uploads(array $fileInput, int $pekerjaanId, int $barangId,
             $finalFileName = "{$uuid}.jpg";
             $relativePath = "/uploads/{$pekerjaanId}/{$finalFileName}";
         } else {
-            // Format JPG / PNG / WEBP
-            $targetExt = ($mimeType === 'image/png' || $extOriginal === 'png') ? 'png' : 'jpg';
-            $finalFileName = "{$uuid}.{$targetExt}";
-            $finalPath = "{$uploadDir}/{$finalFileName}";
-
-            if (!move_uploaded_file($f['tmp_name'], $finalPath)) {
-                $errors[] = "Gagal menyimpan file {$f['name']}.";
+            // Validasi Struktur Gambar menggunakan getimagesize()
+            $imgInfo = @getimagesize($f['tmp_name']);
+            if ($imgInfo === false) {
+                $errors[] = "File '{$f['name']}' bukan merupakan file gambar yang valid.";
                 continue;
+            }
+
+            $imageType = $imgInfo[2] ?? 0;
+            $validTypes = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP];
+            if (!in_array($imageType, $validTypes, true)) {
+                $errors[] = "File '{$f['name']}' memiliki tipe struktur gambar tidak sah.";
+                continue;
+            }
+
+            // Pembersihan / Re-rendering Gambar via GD untuk Membuang EXIF / Payload Tersembunyi (jika ekstensi GD aktif)
+            $sanitized = false;
+            if (extension_loaded('gd')) {
+                if ($imageType === IMAGETYPE_JPEG) {
+                    $gdImg = @imagecreatefromjpeg($f['tmp_name']);
+                    if ($gdImg !== false) {
+                        $targetExt = 'jpg';
+                        $finalFileName = "{$uuid}.{$targetExt}";
+                        $finalPath = "{$uploadDir}/{$finalFileName}";
+                        if (imagejpeg($gdImg, $finalPath, 85)) {
+                            $sanitized = true;
+                        }
+                        imagedestroy($gdImg);
+                    }
+                } elseif ($imageType === IMAGETYPE_PNG) {
+                    $gdImg = @imagecreatefrompng($f['tmp_name']);
+                    if ($gdImg !== false) {
+                        $targetExt = 'png';
+                        $finalFileName = "{$uuid}.{$targetExt}";
+                        $finalPath = "{$uploadDir}/{$finalFileName}";
+                        imagealphablending($gdImg, false);
+                        imagesavealpha($gdImg, true);
+                        if (imagepng($gdImg, $finalPath, 6)) {
+                            $sanitized = true;
+                        }
+                        imagedestroy($gdImg);
+                    }
+                } elseif ($imageType === IMAGETYPE_WEBP && function_exists('imagecreatefromwebp')) {
+                    $gdImg = @imagecreatefromwebp($f['tmp_name']);
+                    if ($gdImg !== false) {
+                        $targetExt = 'webp';
+                        $finalFileName = "{$uuid}.{$targetExt}";
+                        $finalPath = "{$uploadDir}/{$finalFileName}";
+                        if (imagewebp($gdImg, $finalPath, 85)) {
+                            $sanitized = true;
+                        }
+                        imagedestroy($gdImg);
+                    }
+                }
+            }
+
+            if (!$sanitized) {
+                // Fallback jika GD tidak tersedia: simpan file dengan ekstensi yang DIPAKSA sesuai hasil getimagesize()
+                $targetExt = ($imageType === IMAGETYPE_PNG) ? 'png' : (($imageType === IMAGETYPE_WEBP) ? 'webp' : 'jpg');
+                $finalFileName = "{$uuid}.{$targetExt}";
+                $finalPath = "{$uploadDir}/{$finalFileName}";
+
+                if (!move_uploaded_file($f['tmp_name'], $finalPath)) {
+                    $errors[] = "Gagal menyimpan file {$f['name']}.";
+                    continue;
+                }
             }
 
             $relativePath = "/uploads/{$pekerjaanId}/{$finalFileName}";
