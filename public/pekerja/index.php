@@ -38,8 +38,9 @@ if ($pekerjaan) {
     $params = [':pekerjaan_id' => $pekerjaan['id']];
 
     if (!empty($search)) {
-        $sql .= " AND (b.nama_barang LIKE :search OR b.keterangan LIKE :search)";
-        $params[':search'] = "%{$search}%";
+        $sql .= " AND (b.nama_barang LIKE :search_nama OR b.keterangan LIKE :search_ket)";
+        $params[':search_nama'] = "%{$search}%";
+        $params[':search_ket'] = "%{$search}%";
     }
 
     $sql .= " ORDER BY b.created_at DESC";

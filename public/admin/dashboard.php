@@ -29,8 +29,10 @@ if ($filterPekerjaanId > 0) {
 }
 
 if (!empty($search)) {
-    $sql .= " AND (b.nama_barang LIKE :search OR b.keterangan LIKE :search OR p.nama_pekerjaan LIKE :search)";
-    $params[':search'] = "%{$search}%";
+    $sql .= " AND (b.nama_barang LIKE :search_nama OR b.keterangan LIKE :search_ket OR p.nama_pekerjaan LIKE :search_pekerjaan)";
+    $params[':search_nama'] = "%{$search}%";
+    $params[':search_ket'] = "%{$search}%";
+    $params[':search_pekerjaan'] = "%{$search}%";
 }
 
 $sql .= " ORDER BY p.nama_pekerjaan ASC, b.created_at DESC";
