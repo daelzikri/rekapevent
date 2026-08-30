@@ -1,7 +1,6 @@
--- Skema Database Sistem Rekapan Barang (XAMPP MySQL / MariaDB)
--- Buat database jika belum ada
-CREATE DATABASE IF NOT EXISTS `rekapan_barang` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `rekapan_barang`;
+-- Skema Database Sistem Rekapan Barang (MySQL / MariaDB)
+-- Catatan: Pada Hosting (seperti Hostinger), Database sudah dibuat dari cPanel/hPanel.
+
 
 -- Drop tabel jika ada (urutan child ke parent)
 DROP TABLE IF EXISTS `foto_barang`;
@@ -48,15 +47,29 @@ CREATE TABLE `barang` (
   CONSTRAINT `fk_barang_pekerjaan` FOREIGN KEY (`pekerjaan_id`) REFERENCES `pekerjaan` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. Tabel Foto Barang
+-- 4. Tabel Foto Barang (Dilengkapi Kolom Backup Google Drive)
 CREATE TABLE `foto_barang` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `barang_id` INT NOT NULL,
   `file_path` VARCHAR(500) NOT NULL,
   `format_asli` VARCHAR(10),
   `nama_file_server` VARCHAR(255) NOT NULL,
+  `gdrive_file_id` VARCHAR(150) NULL,
+  `gdrive_view_link` VARCHAR(500) NULL,
+  `gdrive_status` ENUM('pending','success','failed') NOT NULL DEFAULT 'pending',
+  `gdrive_retry_count` INT NOT NULL DEFAULT 0,
+  `gdrive_last_attempt_at` DATETIME NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `fk_foto_barang` FOREIGN KEY (`barang_id`) REFERENCES `barang` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Tabel Cache Folder Google Drive Per Pekerjaan
+CREATE TABLE `pekerjaan_gdrive_folder` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `pekerjaan_id` INT NOT NULL UNIQUE,
+  `gdrive_folder_id` VARCHAR(150) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_gdrive_folder_pekerjaan` FOREIGN KEY (`pekerjaan_id`) REFERENCES `pekerjaan` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Tabel Audit Log

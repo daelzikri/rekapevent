@@ -122,6 +122,7 @@ $jobsList = $stmtJobs->fetchAll();
                 <a href="/superadmin/kelola_pekerjaan.php" class="text-sm font-bold text-purple-400">Kelola Pekerjaan</a>
                 <a href="/superadmin/kelola_akun.php" class="text-sm text-slate-400 hover:text-white transition-all">Kelola Akun</a>
                 <a href="/superadmin/export.php" class="text-sm text-slate-400 hover:text-white transition-all">Export Excel/Word</a>
+                <a href="/superadmin/gdrive_status.php" class="text-sm text-slate-400 hover:text-white transition-all">Backup Drive</a>
                 <a href="/admin/dashboard.php" class="text-sm text-slate-400 hover:text-white transition-all">Dashboard View</a>
                 <a href="/auth/logout.php" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">Logout</a>
             </div>
@@ -141,6 +142,7 @@ $jobsList = $stmtJobs->fetchAll();
             <a href="/superadmin/kelola_pekerjaan.php" class="block px-3 py-2.5 rounded-xl text-sm font-bold text-purple-400 bg-purple-500/10 border border-purple-500/20 transition-all">Kelola Pekerjaan</a>
             <a href="/superadmin/kelola_akun.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Kelola Akun</a>
             <a href="/superadmin/export.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Export Excel/Word</a>
+            <a href="/superadmin/gdrive_status.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Backup Drive</a>
             <a href="/admin/dashboard.php" class="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all">Dashboard View</a>
             <a href="/auth/logout.php" class="block w-full text-center mt-3 px-3 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 transition-all">Logout</a>
         </div>

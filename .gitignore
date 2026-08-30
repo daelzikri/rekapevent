@@ -1,0 +1,17 @@
+# Sensitive Credentials
+config/google_drive_credentials.php
+client_secret*.json
+
+# Vendor Dependencies
+/vendor/
+
+# Temporary & Log files
+/logs/*.log
+/sessions/*
+!/sessions/.gitkeep
+!/sessions/.htaccess
+
+# OS / Environment files
+.DS_Store
+Thumbs.db
+*.env

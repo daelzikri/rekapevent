@@ -1,5 +1,5 @@
 -- Seed Data Awal Sistem Rekapan Barang
-USE `rekapan_barang`;
+
 
 -- Passwords for all accounts below: password123
 -- Hash: $2y$12$E0ybKSZR4TOuRsJRFcd7yeoDnkMR99qOE7QgnUVvsYiRSH9FjegNG
