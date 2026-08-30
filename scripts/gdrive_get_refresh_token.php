@@ -51,11 +51,26 @@ if (empty($clientId) || empty($clientSecret)) {
     die("ERROR: Client ID dan Client Secret wajib diisi!\n");
 }
 
+// Pilihan Redirect URI: Default 'http://localhost' untuk kompatibilitas Client ID modern Google
+echo "\nPilih Redirect URI yang terdaftar di Google Cloud Console:\n";
+echo "1. http://localhost (Rekomendasi / Default)\n";
+echo "2. http://127.0.0.1\n";
+echo "3. urn:ietf:wg:oauth:2.0:oob (Legacy Desktop App)\n";
+echo "Pilihan Anda [1/2/3, tekan ENTER untuk Default 'http://localhost']: ";
+$choice = trim(fgets(STDIN));
+
+if ($choice === '2') {
+    $redirectUri = 'http://127.0.0.1';
+} elseif ($choice === '3') {
+    $redirectUri = 'urn:ietf:wg:oauth:2.0:oob';
+} else {
+    $redirectUri = 'http://localhost';
+}
+
 $client = new Google\Client();
 $client->setClientId($clientId);
 $client->setClientSecret($clientSecret);
-// urn:ietf:wg:oauth:2.0:oob (Out-Of-Band manual copy-paste code)
-$client->setRedirectUri('urn:ietf:wg:oauth:2.0:oob');
+$client->setRedirectUri($redirectUri);
 $client->addScope('https://www.googleapis.com/auth/drive.file');
 $client->setAccessType('offline');
 $client->setApprovalPrompt('force');
@@ -70,17 +85,33 @@ echo "\n" . $authUrl . "\n\n";
 echo "-----------------------------------------------------------------\n";
 echo "LANGKAH 2:\n";
 echo "1. Login menggunakan Akun Gmail khusus sistem ini.\n";
-echo "2. Jika muncul peringatan 'Google hasn't verified this app', klik 'Advanced' / 'Lanjutan' lalu klik 'Go to [App Name] (unsafe)'. (Aman karena Anda sendiri pembuatnya).\n";
+echo "2. Jika muncul peringatan 'Google hasn't verified this app', klik 'Advanced' / 'Lanjutan' lalu klik 'Go to [App Name] (unsafe)'.\n";
 echo "3. Berikan izin akses (Scope: drive.file).\n";
-echo "4. Copy/salin Authorization Code yang ditampilkan oleh Google.\n";
+echo "4. Setelah diizinkan, browser akan di-redirect ke halaman URL seperti:\n";
+echo "   http://localhost/?code=4/0A...&scope=...\n";
+echo "   (Meskipun browser menampilkan 'Site can't be reached', itu NORMAL).\n";
+echo "5. Copy SELURUH URL dari address bar browser (atau salin nilai setelah 'code=').\n";
 echo "-----------------------------------------------------------------\n\n";
 
-echo "Tempel (paste) Authorization Code di sini, lalu tekan ENTER:\n> ";
-$authCode = trim(fgets(STDIN));
+echo "Tempel (paste) URL hasil redirect / Authorization Code di sini, lalu tekan ENTER:\n> ";
+$rawInput = trim(fgets(STDIN));
 
-if (empty($authCode)) {
-    die("\nERROR: Authorization Code tidak boleh kosong!\n");
+if (empty($rawInput)) {
+    die("\nERROR: Input tidak boleh kosong!\n");
 }
+
+// Ekstrak nilai `code` secara otomatis jika pengguna menempel seluruh URL
+$authCode = $rawInput;
+if (str_contains($rawInput, 'code=')) {
+    $parsedUrl = parse_url($rawInput);
+    if (isset($parsedUrl['query'])) {
+        parse_str($parsedUrl['query'], $queryParams);
+        if (!empty($queryParams['code'])) {
+            $authCode = $queryParams['code'];
+        }
+    }
+}
+$authCode = urldecode($authCode);
 
 echo "\nMenukar Authorization Code dengan Access & Refresh Token...\n";
 
